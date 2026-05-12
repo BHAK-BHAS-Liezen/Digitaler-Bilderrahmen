@@ -8,7 +8,7 @@
 ║  • Monitor geht nach X Sekunden ohne Bewegung aus            ║
 ║  • Slideshow pausiert im Schlafmodus                         ║
 ║  • Alle Logik läuft in Hintergrund-Threads                   ║
-║  • OneDrive-Sync via rclone (alle 5 Minuten)                 ║
+║  • Google Drive-Sync via rclone (alle 5 Minuten)             ║
 ╚══════════════════════════════════════════════════════════════╝
 """
 
@@ -30,8 +30,12 @@ TIMEOUT_SEC    = 30     # Sekunden ohne Bewegung bis Monitor ausgeht
 CONFIRM_COUNT  = 3      # Wie viele Messungen positiv sein müssen (Anti-Falschalarm)
 CHECK_INTERVAL = 0.1    # Sekunden zwischen Sensor-Abfragen (0.1 = 10x pro Sekunde)
 
-# OneDrive — Pfad in rclone anpassen (z.B. "onedrive:Bilder/Urlaub")
-ONEDRIVE_REMOTE = "onedrive:Bilder/Bilderrahmen"
+# Google Drive — Ordnernamen anpassen nach: rclone lsd onedrive:
+# Beispiele:
+#   "onedrive:"              → Root (alle Dateien)
+#   "onedrive:Bilder"        → Ordner namens "Bilder"
+#   "onedrive:Fotos/Urlaub"  → Unterordner "Urlaub"
+GDRIVE_REMOTE   = "onedrive:Bilder"  # Google Drive Ordner "Bilder"
 LOCAL_IMAGE_DIR = "/home/pi/bilderrahmen/bilder"
 SYNC_INTERVAL   = 300   # OneDrive-Sync alle 5 Minuten (300 Sekunden)
 
@@ -259,15 +263,15 @@ def timeout_thread():
             # Countdown alle 10 Sekunden loggen
             verbleibend = TIMEOUT_SEC - inaktiv_sek
             if verbleibend % 10 == 0 and verbleibend != letzte_warnung and 0 < verbleibend < TIMEOUT_SEC:
-                log.info(f"Kein Bewegung — Monitor aus in {verbleibend}s")
+                log.info(f"Keine Bewegung — Monitor aus in {verbleibend}s")
                 letzte_warnung = verbleibend
 
         time.sleep(1)
 
 
 # ──────────────────────────────────────────────────────────────
-#  THREAD 3: ONEDRIVE-SYNC
-#  Synchronisiert Bilder vom OneDrive alle SYNC_INTERVAL Sekunden.
+#  THREAD 3: GOOGLE DRIVE-SYNC
+#  Synchronisiert Bilder vom Google Drive alle SYNC_INTERVAL Sekunden.
 #  Benötigt rclone (einmalig einrichten mit: rclone config)
 # ──────────────────────────────────────────────────────────────
 
@@ -275,13 +279,13 @@ def onedrive_thread():
     os.makedirs(LOCAL_IMAGE_DIR, exist_ok=True)
 
     while True:
-        log.info("OneDrive-Sync wird gestartet...")
+        log.info("Google Drive-Sync wird gestartet...")
 
         try:
             result = subprocess.run(
                 [
                     "rclone", "sync",
-                    ONEDRIVE_REMOTE,
+                    GDRIVE_REMOTE,
                     LOCAL_IMAGE_DIR,
                     "--include", "*.jpg",
                     "--include", "*.jpeg",
@@ -301,7 +305,7 @@ def onedrive_thread():
                     f for f in os.listdir(LOCAL_IMAGE_DIR)
                     if f.lower().endswith(('.jpg', '.jpeg', '.png'))
                 ])
-                log.info(f"OneDrive-Sync abgeschlossen ✓  ({anzahl} Bilder)")
+                log.info(f"Google Drive-Sync abgeschlossen ✓  ({anzahl} Bilder)")
 
                 # Slideshow neu starten damit neue Bilder erscheinen
                 with state_lock:
@@ -334,7 +338,7 @@ def main():
     log.info(f"   GPIO Pin:    {GPIO_PIN}")
     log.info(f"   Aufwärmzeit: {WARMUP_SEC}s")
     log.info(f"   Timeout:     {TIMEOUT_SEC}s")
-    log.info(f"   OneDrive:    {ONEDRIVE_REMOTE}")
+    log.info(f"   Google Drive: {GDRIVE_REMOTE}")
     log.info("=" * 55)
 
     # Ordner anlegen falls nicht vorhanden
