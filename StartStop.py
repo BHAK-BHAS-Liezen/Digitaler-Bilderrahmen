@@ -35,7 +35,7 @@ CHECK_INTERVAL = 0.1    # Sekunden zwischen Sensor-Abfragen (0.1 = 10x pro Sekun
 # Google Drive — Ordnernamen anpassen nach: rclone lsd onedrive:
 GDRIVE_REMOTE   = "onedrive:Bilder"      # Google Drive Ordner "Bilder"
 LOCAL_IMAGE_DIR = "/home/admin/bilderrahmen/bilder"
-SYNC_INTERVAL   = 300                    # Sync alle 5 Minuten
+SYNC_INTERVAL   = 10                     # Sync alle 10 Sekunden
 
 # Webserver & Chromium
 WEB_DIR   = "/home/admin/bilderrahmen"   # Ordner mit index.html
@@ -302,8 +302,25 @@ def timeout_thread():
 
 
 # ──────────────────────────────────────────────────────────────
+#  HILFSFUNKTION: Aktuelle Bildliste holen
+# ──────────────────────────────────────────────────────────────
+
+def bilder_liste():
+    """Gibt ein Set mit allen lokalen Bilddateinamen zurück."""
+    if not os.path.isdir(LOCAL_IMAGE_DIR):
+        return set()
+    return set(
+        f for f in os.listdir(LOCAL_IMAGE_DIR)
+        if f.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
+    )
+
+
+# ──────────────────────────────────────────────────────────────
 #  THREAD 4: GOOGLE DRIVE-SYNC
 #  Synchronisiert Bilder alle SYNC_INTERVAL Sekunden.
+#  → Neue Bilder werden hinzugefügt
+#  → Gelöschte Bilder werden lokal entfernt (rclone sync)
+#  → Änderungen werden im Log angezeigt
 # ──────────────────────────────────────────────────────────────
 
 def gdrive_thread():
@@ -312,10 +329,13 @@ def gdrive_thread():
     while True:
         log.info("Google Drive-Sync wird gestartet...")
 
+        # Bildliste VOR dem Sync merken
+        bilder_vorher = bilder_liste()
+
         try:
             result = subprocess.run(
                 [
-                    "rclone", "sync",
+                    "rclone", "sync",          # sync = neue hinzufügen UND gelöschte entfernen
                     GDRIVE_REMOTE,
                     LOCAL_IMAGE_DIR,
                     "--include", "*.jpg",
@@ -323,8 +343,10 @@ def gdrive_thread():
                     "--include", "*.png",
                     "--include", "*.JPG",
                     "--include", "*.PNG",
+                    "--include", "*.JPEG",
                     "--transfers", "2",
-                    "--low-level-retries", "3"
+                    "--low-level-retries", "3",
+                    "--delete-during",         # gelöschte Bilder sofort lokal entfernen
                 ],
                 capture_output=True,
                 text=True,
@@ -332,11 +354,22 @@ def gdrive_thread():
             )
 
             if result.returncode == 0:
-                anzahl = len([
-                    f for f in os.listdir(LOCAL_IMAGE_DIR)
-                    if f.lower().endswith(('.jpg', '.jpeg', '.png'))
-                ])
-                log.info(f"Google Drive-Sync abgeschlossen ✓  ({anzahl} Bilder)")
+                # Bildliste NACH dem Sync
+                bilder_nachher = bilder_liste()
+
+                # Vergleichen was sich geändert hat
+                neu       = bilder_nachher - bilder_vorher
+                geloescht = bilder_vorher  - bilder_nachher
+
+                if neu:
+                    log.info(f"  ✚ Neu hinzugefügt ({len(neu)}): {', '.join(sorted(neu))}")
+                if geloescht:
+                    log.info(f"  ✖ Entfernt ({len(geloescht)}): {', '.join(sorted(geloescht))}")
+                if not neu and not geloescht:
+                    log.info(f"  ↔ Keine Änderungen")
+
+                log.info(f"Google Drive-Sync abgeschlossen ✓  ({len(bilder_nachher)} Bilder lokal)")
+
             else:
                 log.warning(f"rclone Fehler: {result.stderr.strip()}")
 
@@ -347,7 +380,7 @@ def gdrive_thread():
         except Exception as e:
             log.error(f"Sync-Fehler: {e}")
 
-        log.info(f"Nächster Sync in {SYNC_INTERVAL // 60} Minuten.")
+        log.info(f"Nächster Sync in {SYNC_INTERVAL} Sekunden.")
         time.sleep(SYNC_INTERVAL)
 
 
