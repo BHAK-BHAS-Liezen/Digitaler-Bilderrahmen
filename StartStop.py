@@ -35,7 +35,7 @@ CHECK_INTERVAL = 0.1    # Sekunden zwischen Sensor-Abfragen (0.1 = 10x pro Sekun
 # Google Drive — Ordnernamen anpassen nach: rclone lsd onedrive:
 GDRIVE_REMOTE   = "onedrive:Bilder"      # Google Drive Ordner "Bilder"
 LOCAL_IMAGE_DIR = "/home/admin/bilderrahmen/bilder"
-SYNC_INTERVAL   = 10                     # Sync alle 10 Sekunden
+SYNC_INTERVAL   = 60                     # Sync alle 60 Sekunden
 
 # Webserver & Chromium
 WEB_DIR   = "/home/admin/bilderrahmen"   # Ordner mit index.html
