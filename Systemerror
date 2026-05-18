@@ -1,25 +1,5 @@
-/usr/bin/python3 /home/admin/Digitaler-Bilderrahmen/StartStop.py 
-09:13:17  [MainThread]  =======================================================
-09:13:17  [MainThread]     Digitaler Bilderrahmen — Start
-09:13:17  [MainThread]     GPIO Pin:     4
-09:13:17  [MainThread]     Aufwärmzeit:  30s
-09:13:17  [MainThread]     Timeout:      30s
-09:13:17  [MainThread]     Google Drive: onedrive:Bilder
-09:13:17  [MainThread]     Vollbild:     False
-09:13:17  [MainThread]  =======================================================
-09:13:17  [MainThread]  Status → warming_up
-09:13:17  [MainThread]  Thread gestartet: Webserver
-09:13:17  [PIR-Sensor]  PIR-Sensor wird initialisiert (GPIO 4)...
-09:13:17  [MainThread]  Thread gestartet: PIR-Sensor
-09:13:17  [Webserver ]  Webserver läuft auf http://localhost:8080
-09:13:17  [MainThread]  Thread gestartet: Timeout
-09:13:17  [MainThread]  Thread gestartet: GDrive
-09:13:17  [GDrive    ]  Google Drive-Sync wird gestartet...
-09:13:17  [MainThread]  Chromium-Fenster wird geöffnet...
-09:13:17  [PIR-Sensor]  Aufwärmphase: 30 Sekunden...
-09:13:17  [PIR-Sensor]  Status → warming_up
-09:13:17  [PIR-Sensor]    Sensor bereit in 30s ...
-09:13:19  [GDrive    ]  rclone Fehler: 2026/05/18 09:13:19 Failed to create file system for "onedrive:Bilder": couldn't find root directory ID: googleapi: Error 403: Quota exceeded for quota metric 'Queries' and limit 'Queries per minute' of service 'drive.googleapis.com' for consumer 'project_number:202264815644'.
+12:39:17  [GDrive    ]  Google Drive-Sync wird gestartet...
+12:39:22  [GDrive    ]  rclone Fehler: 2026/05/18 12:39:22 Failed to create file system for "onedrive:Bilder": couldn't find root directory ID: googleapi: Error 403: Quota exceeded for quota metric 'Queries' and limit 'Queries per minute' of service 'drive.googleapis.com' for consumer 'project_number:202264815644'.
 Details:
 [
   {
@@ -46,18 +26,3 @@ Details:
     ]
   }
 ]
-, rateLimitExceeded
-09:13:19  [GDrive    ]  Nächster Sync in 5 Minuten.
-09:13:19  [MainThread]  Chromium gestartet — Modus: Fenster (maximiert)
-09:13:19  [MainThread]  Slideshow erreichbar unter: http://localhost:8080
-09:13:19  [MainThread]  Warte auf Aufwärmphase des Sensors...
-09:13:22  [PIR-Sensor]    Sensor bereit in 25s ...
-09:13:27  [PIR-Sensor]    Sensor bereit in 20s ...
-09:13:32  [PIR-Sensor]    Sensor bereit in 15s ...
-09:13:37  [PIR-Sensor]    Sensor bereit in 10s ...
-09:13:42  [PIR-Sensor]    Sensor bereit in 5s ...
-09:13:47  [PIR-Sensor]  Sensor kalibriert und bereit ✓
-09:13:47  [PIR-Sensor]  Status → active
-09:13:47  [PIR-Sensor]  Bewegung erkannt 👤
-09:13:47  [PIR-Sensor]  Status → active
-09:13:48  [MainThread]  System bereit! Bilderrahmen läuft.
