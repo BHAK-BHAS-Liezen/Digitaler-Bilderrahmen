@@ -1,5 +1,4 @@
-12:39:17  [GDrive    ]  Google Drive-Sync wird gestartet...
-12:39:22  [GDrive    ]  rclone Fehler: 2026/05/18 12:39:22 Failed to create file system for "onedrive:Bilder": couldn't find root directory ID: googleapi: Error 403: Quota exceeded for quota metric 'Queries' and limit 'Queries per minute' of service 'drive.googleapis.com' for consumer 'project_number:202264815644'.
+09:53:18  [GDrive    ]  rclone Fehler: 2026/05/19 09:53:18 Failed to create file system for "gdrive:Bilder": couldn't find root directory ID: googleapi: Error 403: Quota exceeded for quota metric 'Queries' and limit 'Queries per minute' of service 'drive.googleapis.com' for consumer 'project_number:202264815644'.
 Details:
 [
   {
@@ -26,3 +25,4 @@ Details:
     ]
   }
 ]
+, rateLimitExceeded
