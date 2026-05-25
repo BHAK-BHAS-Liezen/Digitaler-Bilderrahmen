@@ -18,6 +18,7 @@ import time
 import threading
 import subprocess
 import logging
+import json #verbindung mit json
 from datetime import datetime, timedelta
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from gpiozero import MotionSensor
@@ -72,6 +73,7 @@ motion_active    = False
 system_ready     = False
 browser_proc     = None           # Chromium-Prozess
 status_datei     = os.path.join(WEB_DIR, "status.txt")
+CONTROL_FILE = os.path.join(WEB_DIR, "data/control.json")
 
 # ──────────────────────────────────────────────────────────────
 #  HILFSFUNKTION: Status-Datei schreiben
@@ -89,6 +91,28 @@ def status_setzen(status: str):
     except Exception as e:
         log.warning(f"Status-Datei Fehler: {e}")
 
+def lade_control(): #für verbindung mit php und json
+
+    global TIMEOUT_SEC
+
+    try:
+        with open(CONTROL_FILE, "r") as f:
+            data = json.load(f)
+
+        TIMEOUT_SEC = data.get("timeout", 30)
+
+        monitor_status = data.get("monitor", "on")
+
+        if monitor_status == "off":
+            monitor_aus()
+
+        elif monitor_status == "on":
+            monitor_an()
+
+        log.info(f"Control geladen: {data}")
+
+    except Exception as e:
+        log.warning(f"Control Fehler: {e}")
 
 def änderungen_loggen(neu: set, geloescht: set):
     """Schreibt Bild-Änderungen in eine separate Log-Datei."""
@@ -418,6 +442,15 @@ def gdrive_thread():
 # ──────────────────────────────────────────────────────────────
 #  HAUPTPROGRAMM
 # ──────────────────────────────────────────────────────────────
+#für verbindung mit php und json
+def control_thread():
+
+    while True:
+
+        lade_control()
+
+        time.sleep(2)
+
 
 def main():
     log.info("=" * 55)
@@ -442,6 +475,9 @@ def main():
         threading.Thread(target=pir_thread,       name="PIR-Sensor", daemon=True),
         threading.Thread(target=timeout_thread,   name="Timeout",    daemon=True),
         threading.Thread(target=gdrive_thread,    name="GDrive",     daemon=True),
+
+        #für verbindung php und json dings
+        threading.Thread(target=control_thread, name="Control", daemon=True),
     ]
 
     for t in threads:
