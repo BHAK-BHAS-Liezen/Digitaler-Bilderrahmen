@@ -21,7 +21,7 @@ html, body {
   width: 100%; height: 100%;
   background: var(--dark);
   overflow: hidden;
-  cursor: none;
+  cursor: default; //oder none
 }
 
 #stage {
@@ -179,11 +179,164 @@ html, body {
 #no-images.show { display: flex; }
 #no-images-text {
   font-family: 'Raleway', sans-serif; font-weight: 200; font-size: 13px;
-  letter-spacing: 0.25em; text-transform: uppercase; color: rgba(200,169,110,0.4);
+  letter-spacing: 0.25em; text-transform: uppercase; color: rgba(200,169,110,0.4);}
+
+  /* ── Menü ───────────────────────── */
+
+#menuButton{
+
+  position: fixed;
+
+  top: 50%;
+  right: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 90px;
+  height: 90px;
+
+  border: none;
+
+  border-radius: 20px;
+
+  background: rgba(0,0,0,0.9);
+
+  color: white;
+
+  font-size: 28px;
+
+  z-index: 99999;
+
+  cursor: pointer;
+
+  backdrop-filter: blur(10px);
+
+  border: 1px solid rgba(200,169,110,0.3);
+  align-items: center;
+  justify-content: center;
+
+  pointer-events: auto;
+}
+
+/* ── Controlpanel ───────────────── */
+
+#controlPanel {
+  color:white ;
+  position: fixed;
+
+  top: 0;
+  right: -340px;
+
+  width: 320px;
+  height: 100%;
+
+  background: rgba(10, 10, 10, 0.96);
+
+  z-index: 99998;
+
+  transition: 0.35s ease;
+
+  padding: 30px;
+
+  border-left: 1px solid rgba(200, 169, 110, 0.2);
+
+  backdrop-filter: blur(16px);
+
+}
+.panelButton{
+
+  width: 100%;
+
+  padding: 16px;
+
+  margin-top: 15px;
+
+  border: none;
+
+  border-radius: 12px;
+
+  background: rgba(200,169,110,0.2);
+
+  color: white;
+
+  font-size: 18px;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.panelButton:hover{
+
+  background: rgba(200,169,110,0.4);
+}
+
+#controlPanel input{
+
+  width: 100%;
+
+  margin-top: 12px;
+
+  padding: 12px;
+
+  border-radius: 10px;
+
+  border: none;
+
+  font-size: 18px;
 }
 </style>
 </head>
 <body>
+
+<button id="menuButton"
+style="
+position:fixed;
+top:50%;
+left:50%;
+transform:translate(-50%, -50%);
+width:140px;
+height:140px;
+font-size:60px;
+background:red;
+color:white;
+border:none;
+border-radius:20px;
+z-index:999999999;
+cursor:pointer;
+">
+☰
+</button>
+<div id="controlPanel">
+
+  <h1>Steuerung</h1>
+
+  <button class="panelButton"
+        onclick="monitorAn('on')">
+    Monitor AN
+</button>
+
+  <button class="panelButton"
+        onclick="monitorAus('off')">
+    Monitor AUS
+</button>
+
+  <button class="panelButton"
+        onclick="monitorAuto('auto')">
+    AUTO Modus
+</button>
+
+  <h2>Timeout</h2>
+
+  <input type="number"
+         id="timeoutInput"
+         value="30">
+
+  <button class="panelButton"
+          onclick="saveTimeout()">
+    Timeout speichern
+  </button>
+
+</div>
 
 <div id="warmup">
   <div id="warmup-title">Bilderrahmen</div>
@@ -488,6 +641,141 @@ setTimeout(() => {
     loadImages().then(() => startSlideshow());
   }
 }, WARMUP_SEC * 1000);
+
+
+/* ── Menü ───────────────────────── */
+
+const menuButton =
+    document.getElementById("menuButton");
+
+const controlPanel =
+    document.getElementById("controlPanel");
+
+let menuOpen = false;
+
+menuButton.onclick = () => {
+
+    menuOpen = !menuOpen;
+
+    if(menuOpen){
+
+        controlPanel.style.right = "0px";
+    }
+    else{
+
+        controlPanel.style.right = "-340px";
+    }
+}
+
+/* ── Steuerung speichern ───────────────── */
+
+async function saveControl(data){
+
+    await fetch("/data/control.json", {
+
+        method: "PUT",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify(data)
+    });
+}
+
+/* ── Monitor ───────────────────────────── */
+
+function monitorAn(){
+
+    saveControl({
+        monitor: "on",
+        timeout: 30,
+        slideshow_speed: 7
+    });
+
+    console.log("Monitor AN");
+}
+
+function monitorAus(){
+
+    saveControl({
+        monitor: "off",
+        timeout: 30,
+        slideshow_speed: 7
+    });
+
+    console.log("Monitor AUS");
+}
+
+function monitorAuto(){
+
+    saveControl({
+        monitor: "auto",
+        timeout: 30,
+        slideshow_speed: 7
+    });
+
+    console.log("AUTO");
+}
+
+
+/* ── Control speichern ───────────────────────── */
+
+async function saveControl(data){
+
+    await fetch("/save.php", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify(data)
+    });
+}
+
+/* ── Monitor ─────────────────────────────────── */
+
+async function setMonitor(mode){
+
+    const timeout =
+        document.getElementById("timeoutInput").value;
+
+    await saveControl({
+
+        monitor: mode,
+
+        timeout: parseInt(timeout),
+
+        slideshow_speed: 7
+    });
+
+    console.log("Monitor:", mode);
+}
+
+/* ── Timeout ─────────────────────────────────── */
+
+async function saveTimeout(){
+
+    const timeout =
+        document.getElementById("timeoutInput").value;
+
+    await saveControl({
+
+        monitor: "auto",
+
+        timeout: parseInt(timeout),
+
+        slideshow_speed: 7
+    });
+
+    console.log("Timeout gespeichert");
+}
+
 </script>
+
+
+
 </body>
 </html>

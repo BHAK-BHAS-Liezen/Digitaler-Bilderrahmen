@@ -93,6 +93,7 @@ def status_setzen(status: str):
 
 def lade_control(): #für verbindung mit php und json
 
+
     global TIMEOUT_SEC
 
     try:
@@ -353,6 +354,7 @@ def timeout_thread():
 
         inaktiv_seit = datetime.now() - lmt
         inaktiv_sek  = int(inaktiv_seit.total_seconds())
+
 
         with open(CONTROL_FILE, "r") as f:
             data = json.load(f)
