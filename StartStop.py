@@ -103,11 +103,19 @@ def lade_control(): #für verbindung mit php und json
 
         monitor_status = data.get("monitor", "on")
 
+
         if monitor_status == "off":
             monitor_aus()
 
         elif monitor_status == "on":
             monitor_an()
+
+        elif monitor_status == "auto":
+
+            # Sensoren übernehmen Steuerung
+            pass
+        
+
 
         log.info(f"Control geladen: {data}")
 
@@ -295,6 +303,13 @@ def pir_thread():
         if pir.motion_detected:
             counter += 1
 
+            with open(CONTROL_FILE, "r") as f:
+                data = json.load(f)
+
+            if data.get("monitor") != "auto":
+                time.sleep(CHECK_INTERVAL)
+                continue
+
             if counter >= CONFIRM_COUNT:
                 with state_lock:
                     last_motion_time = datetime.now()
@@ -338,6 +353,13 @@ def timeout_thread():
 
         inaktiv_seit = datetime.now() - lmt
         inaktiv_sek  = int(inaktiv_seit.total_seconds())
+
+        with open(CONTROL_FILE, "r") as f:
+            data = json.load(f)
+
+        if data.get("monitor") != "auto":
+            time.sleep(1)
+            continue
 
         if inaktiv_seit > timedelta(seconds=TIMEOUT_SEC):
             if s_on:
