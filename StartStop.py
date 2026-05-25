@@ -41,6 +41,7 @@ LOG_DATEI         = "/home/admin/Digitaler-Bilderrahmen/bilderrahmen.log"
 ÄNDERUNGEN_LOG    = "/home/admin/Digitaler-Bilderrahmen/änderungen.log"
 SYNC_INTERVAL     = 60                   # Sync alle 60 Sekunden
 
+
 # Webserver & Chromium
 WEB_DIR   = "/home/admin/Digitaler-Bilderrahmen"   # Ordner mit index.html
 WEB_PORT  = 8080                         # Port des lokalen Webservers
@@ -102,18 +103,34 @@ def lade_control(): #für verbindung mit php und json
 
         TIMEOUT_SEC = data.get("timeout", 30)
 
-        monitor_status = data.get("monitor", "on")
+        monitor_status = data.get("monitor", "auto")
 
+        with state_lock:
+            aktuell_an = screen_on
 
+        # ─────────────────────────────
+        # MANUELL AUS
+        # ─────────────────────────────
         if monitor_status == "off":
-            monitor_aus()
 
+            if aktuell_an:
+                monitor_aus()
+
+        # ─────────────────────────────
+        # MANUELL AN
+        # ─────────────────────────────
         elif monitor_status == "on":
-            monitor_an()
 
+            if not aktuell_an:
+                monitor_an()
+
+        # ─────────────────────────────
+        # AUTO-MODUS
+        # ─────────────────────────────
         elif monitor_status == "auto":
 
-            # Sensoren übernehmen Steuerung
+            # Im Auto-Modus NICHTS erzwingen.
+            # PIR + Timeout übernehmen wieder die Kontrolle.
             pass
         
 
@@ -342,9 +359,22 @@ def pir_thread():
             with open(CONTROL_FILE, "r") as f:
                 data = json.load(f)
 
-            if data.get("monitor") != "auto":
-                time.sleep(CHECK_INTERVAL)
-                continue
+            monitor_mode = data.get("monitor", "auto")
+
+            if counter >= CONFIRM_COUNT:
+
+                with state_lock:
+                    last_motion_time = datetime.now()
+                    war_inaktiv = not motion_active
+                    motion_active = True
+
+                # Nur im AUTO-Modus Monitor automatisch einschalten
+                if monitor_mode == "auto":
+
+                    if war_inaktiv:
+                        log.info("Bewegung erkannt 👤")
+                        status_setzen("active")
+                        monitor_an()
 
             if counter >= CONFIRM_COUNT:
                 with state_lock:
