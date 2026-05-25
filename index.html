@@ -24,55 +24,40 @@ html, body {
   cursor: none;
 }
 
-/* ── Slideshow ─────────────────────────────────── */
 #stage {
   position: fixed; inset: 0;
   z-index: 0;
 }
 .slide {
   position: absolute; inset: 0;
-  background-size: cover;
+  background-size: contain;
   background-position: center;
+  background-repeat: no-repeat;
   opacity: 0;
   transition: opacity 2.5s cubic-bezier(0.4,0,0.2,1);
-  will-change: opacity, transform;
 }
 .slide.active {
   opacity: 1;
   animation: drift 12s ease-in-out forwards;
 }
 @keyframes drift {
-  from { transform: scale(1.00) translateX(0px); }
+  from { transform: scale(1.00); }
   to   { transform: scale(1.07) translateX(-15px); }
 }
 
-/* ── Overlays ──────────────────────────────────── */
 #vignette {
   position: fixed; inset: 0; z-index: 1;
   background:
-    radial-gradient(ellipse 80% 80% at 50% 50%,
-      transparent 30%, rgba(0,0,0,0.75) 100%),
-    linear-gradient(to bottom,
-      rgba(0,0,0,0.3) 0%,
-      transparent 20%,
-      transparent 75%,
-      rgba(0,0,0,0.5) 100%);
+    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(0,0,0,0.75) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 20%, transparent 75%, rgba(0,0,0,0.5) 100%);
   pointer-events: none;
 }
 
-/* ── Rahmen-Ornament ───────────────────────────── */
 #frame {
   position: fixed; inset: 12px; z-index: 2;
   pointer-events: none;
   border: 1px solid rgba(200,169,110,0.18);
 }
-#frame::before, #frame::after {
-  content: '';
-  position: absolute;
-  inset: 5px;
-  border: 1px solid rgba(200,169,110,0.08);
-}
-/* Eckverzierungen */
 .fc {
   position: absolute;
   width: 28px; height: 28px;
@@ -80,165 +65,93 @@ html, body {
   border-style: solid;
   opacity: 0.6;
 }
-.fc.tl { top: -1px; left: -1px;  border-width: 2px 0 0 2px; }
-.fc.tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+.fc.tl { top: -1px; left: -1px;   border-width: 2px 0 0 2px; }
+.fc.tr { top: -1px; right: -1px;  border-width: 2px 2px 0 0; }
 .fc.bl { bottom: -1px; left: -1px;  border-width: 0 0 2px 2px; }
 .fc.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 
-/* ── Uhrzeit ───────────────────────────────────── */
 #clock-wrap {
-  position: fixed;
-  bottom: 40px; left: 48px;
-  z-index: 10;
+  position: fixed; bottom: 40px; left: 48px; z-index: 10;
 }
 #time {
   font-family: 'Playfair Display', serif;
-  font-weight: 300;
-  font-size: 80px;
-  color: var(--white);
-  letter-spacing: -0.03em;
-  line-height: 1;
+  font-weight: 300; font-size: 80px;
+  color: var(--white); letter-spacing: -0.03em; line-height: 1;
   text-shadow: 0 0 60px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8);
 }
 #date {
   font-family: 'Raleway', sans-serif;
-  font-weight: 200;
-  font-size: 12px;
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  color: var(--gold);
-  margin-top: 8px;
-  text-shadow: 0 1px 8px rgba(0,0,0,0.8);
+  font-weight: 200; font-size: 12px;
+  letter-spacing: 0.35em; text-transform: uppercase;
+  color: var(--gold); margin-top: 8px;
 }
 
-/* ── Bildname ──────────────────────────────────── */
 #img-name {
-  position: fixed;
-  bottom: 42px; right: 48px;
-  z-index: 10;
+  position: fixed; bottom: 42px; right: 48px; z-index: 10;
   font-family: 'Playfair Display', serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: 15px;
-  color: rgba(245,240,232,0.5);
-  letter-spacing: 0.08em;
-  text-shadow: 0 1px 10px rgba(0,0,0,0.9);
-  transition: opacity 0.8s;
+  font-style: italic; font-weight: 300; font-size: 15px;
+  color: rgba(245,240,232,0.5); letter-spacing: 0.08em;
 }
 
-/* ── Status Badge ──────────────────────────────── */
 #status {
-  position: fixed;
-  top: 28px; right: 36px;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  gap: 9px;
+  position: fixed; top: 28px; right: 36px; z-index: 10;
+  display: flex; align-items: center; gap: 9px;
   background: var(--glass);
   border: 1px solid var(--gold-dim);
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-radius: 100px;
   padding: 9px 18px 9px 12px;
-  transition: opacity 0.5s;
 }
 #dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
+  width: 8px; height: 8px; border-radius: 50%;
   background: #6fcf97;
   box-shadow: 0 0 0 2px rgba(111,207,151,0.25);
   transition: background 0.4s, box-shadow 0.4s;
   flex-shrink: 0;
 }
-#dot.inactive {
-  background: #eb5757;
-  box-shadow: 0 0 0 2px rgba(235,87,87,0.25);
-}
-#dot.warmup {
-  background: var(--gold);
-  box-shadow: 0 0 0 2px rgba(200,169,110,0.3);
+#dot.inactive { background: #eb5757; box-shadow: 0 0 0 2px rgba(235,87,87,0.25); }
+#dot.warmup  {
+  background: var(--gold); box-shadow: 0 0 0 2px rgba(200,169,110,0.3);
   animation: pulse-gold 1.5s ease-in-out infinite;
 }
-@keyframes pulse-gold {
-  0%,100% { opacity: 1; } 50% { opacity: 0.4; }
-}
+@keyframes pulse-gold { 0%,100%{opacity:1} 50%{opacity:0.4} }
 #status-text {
   font-family: 'Raleway', sans-serif;
-  font-weight: 300;
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--white);
+  font-weight: 300; font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--white);
 }
 
-/* ── Countdown ─────────────────────────────────── */
-#countdown {
-  position: fixed;
-  top: 22px; right: 136px;
-  z-index: 10;
-  opacity: 0;
-  transition: opacity 0.6s;
-}
+#countdown { position: fixed; top: 22px; right: 136px; z-index: 10; opacity: 0; transition: opacity 0.6s; }
 #countdown.show { opacity: 1; }
 #cd-svg { width: 44px; height: 44px; }
 #cd-ring {
-  stroke-dasharray: 110;
-  stroke-dashoffset: 0;
-  transform-origin: center;
-  transform: rotate(-90deg);
+  stroke-dasharray: 110; stroke-dashoffset: 0;
+  transform-origin: center; transform: rotate(-90deg);
   transition: stroke-dashoffset 1s linear;
 }
-#cd-num {
-  font-family: 'Raleway', sans-serif;
-  font-size: 11px;
-  font-weight: 200;
-  fill: var(--white);
-  dominant-baseline: middle;
-  text-anchor: middle;
-}
+#cd-num { font-family:'Raleway',sans-serif; font-size:11px; font-weight:200; fill:var(--white); dominant-baseline:middle; text-anchor:middle; }
 
-/* ── Schlafmodus ───────────────────────────────── */
 #sleep {
   position: fixed; inset: 0; z-index: 50;
-  background: #000;
-  opacity: 0;
-  pointer-events: none;
+  background: #000; opacity: 0; pointer-events: none;
   transition: opacity 2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
 }
-#sleep.active {
-  opacity: 1;
-  pointer-events: all;
-}
-#sleep-inner {
-  text-align: center;
-  opacity: 0;
-  transition: opacity 1s ease 2s;
-}
+#sleep.active { opacity: 1; pointer-events: all; }
+#sleep-inner { text-align: center; opacity: 0; transition: opacity 1s ease 2s; }
 #sleep.active #sleep-inner { opacity: 1; }
 #sleep-ring {
   width: 48px; height: 48px;
-  border: 1px solid rgba(200,169,110,0.2);
-  border-radius: 50%;
+  border: 1px solid rgba(200,169,110,0.2); border-radius: 50%;
   margin: 0 auto 20px;
   animation: breathe 4s ease-in-out infinite;
 }
-@keyframes breathe {
-  0%,100% { transform: scale(1); opacity: 0.3; }
-  50%      { transform: scale(1.15); opacity: 0.7; }
-}
+@keyframes breathe { 0%,100%{transform:scale(1);opacity:0.3} 50%{transform:scale(1.15);opacity:0.7} }
 #sleep-label {
-  font-family: 'Raleway', sans-serif;
-  font-weight: 100;
-  font-size: 10px;
-  letter-spacing: 0.5em;
-  text-transform: uppercase;
-  color: rgba(200,169,110,0.3);
+  font-family: 'Raleway', sans-serif; font-weight: 100; font-size: 10px;
+  letter-spacing: 0.5em; text-transform: uppercase; color: rgba(200,169,110,0.3);
 }
 
-/* ── Aufwärm-Overlay ───────────────────────────── */
 #warmup {
   position: fixed; inset: 0; z-index: 40;
   background: radial-gradient(ellipse at center, #0d0c0a 0%, #000 100%);
@@ -247,45 +160,26 @@ html, body {
   transition: opacity 1.5s ease;
 }
 #warmup.hidden { opacity: 0; pointer-events: none; }
-#warmup-title {
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: 28px;
-  color: var(--gold);
-  letter-spacing: 0.05em;
-}
-#warmup-bar-wrap {
-  width: 200px;
-  height: 1px;
-  background: rgba(200,169,110,0.2);
-  overflow: hidden;
-}
-#warmup-bar {
-  height: 100%;
-  width: 0%;
-  background: var(--gold);
-  transition: width 1s linear;
-}
-#warmup-sub {
-  font-family: 'Raleway', sans-serif;
-  font-weight: 200;
-  font-size: 10px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: rgba(200,169,110,0.45);
+#warmup-title { font-family:'Playfair Display',serif; font-style:italic; font-weight:300; font-size:28px; color:var(--gold); letter-spacing:0.05em; }
+#warmup-bar-wrap { width:200px; height:1px; background:rgba(200,169,110,0.2); overflow:hidden; }
+#warmup-bar { height:100%; width:0%; background:var(--gold); transition:width 1s linear; }
+#warmup-sub { font-family:'Raleway',sans-serif; font-weight:200; font-size:10px; letter-spacing:0.3em; text-transform:uppercase; color:rgba(200,169,110,0.45); }
+
+#img-counter {
+  position: fixed; top: 28px; left: 48px; z-index: 10;
+  font-family: 'Raleway', sans-serif; font-weight: 200; font-size: 10px;
+  letter-spacing: 0.25em; color: rgba(200,169,110,0.5);
 }
 
-/* ── Bild-Zähler ───────────────────────────────── */
-#img-counter {
-  position: fixed;
-  top: 28px; left: 48px;
-  z-index: 10;
-  font-family: 'Raleway', sans-serif;
-  font-weight: 200;
-  font-size: 10px;
-  letter-spacing: 0.25em;
-  color: rgba(200,169,110,0.5);
+/* Kein Bild gefunden Hinweis */
+#no-images {
+  position: fixed; inset: 0; z-index: 5;
+  display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+}
+#no-images.show { display: flex; }
+#no-images-text {
+  font-family: 'Raleway', sans-serif; font-weight: 200; font-size: 13px;
+  letter-spacing: 0.25em; text-transform: uppercase; color: rgba(200,169,110,0.4);
 }
 </style>
 </head>
@@ -305,6 +199,10 @@ html, body {
   <div class="fc bl"></div><div class="fc br"></div>
 </div>
 
+<div id="no-images">
+  <div id="no-images-text">Warte auf Bilder vom Google Drive …</div>
+</div>
+
 <div id="img-counter"></div>
 
 <div id="status">
@@ -314,18 +212,15 @@ html, body {
 
 <div id="countdown">
   <svg id="cd-svg" viewBox="0 0 44 44">
-    <circle cx="22" cy="22" r="17.5" fill="none"
-      stroke="rgba(200,169,110,0.15)" stroke-width="1.5"/>
-    <circle id="cd-ring" cx="22" cy="22" r="17.5"
-      fill="none" stroke="var(--gold)" stroke-width="1.5"
-      stroke-linecap="round"/>
+    <circle cx="22" cy="22" r="17.5" fill="none" stroke="rgba(200,169,110,0.15)" stroke-width="1.5"/>
+    <circle id="cd-ring" cx="22" cy="22" r="17.5" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/>
     <text id="cd-num" x="22" y="22">–</text>
   </svg>
 </div>
 
 <div id="clock-wrap">
   <div id="time">00:00</div>
-  <div id="date">Dienstag, 1. Januar</div>
+  <div id="date">Montag, 1. Januar</div>
 </div>
 
 <div id="img-name"></div>
@@ -338,24 +233,23 @@ html, body {
 </div>
 
 <script>
-// ── Konfiguration ────────────────────────────────────────────
-const TIMEOUT_SEC     = 30;    // muss mit Python übereinstimmen
-const WARMUP_SEC      = 30;    // muss mit Python übereinstimmen
-const SLIDE_MS        = 7000;  // ms pro Bild
-const STATUS_POLL_MS  = 500;   // wie oft status.txt gelesen wird
-const IMAGE_REFRESH   = 30000; // Bildliste alle 30s neu laden
+// ── Konfiguration ─────────────────────────────────────────────
+const TIMEOUT_SEC    = 30;    // muss mit Python TIMEOUT_SEC übereinstimmen
+const WARMUP_SEC     = 30;    // muss mit Python WARMUP_SEC übereinstimmen
+const SLIDE_MS       = 7000;  // Millisekunden pro Bild
+const STATUS_POLL_MS = 500;   // wie oft status.txt gelesen wird
+const IMAGE_POLL_MS  = 5000;  // alle 5 Sekunden Bildliste prüfen (erkennt neue Bilder sofort)
 
-// ── Zustand ──────────────────────────────────────────────────
-let images        = [];
-let currentIdx    = 0;
-let slideTimer    = null;
-let cdInterval    = null;
-let sleeping      = false;
-let warmingUp     = true;
-let lastStatus    = "";
-let noMotionSince = null;  // wann keine Bewegung begann
+// ── Zustand ───────────────────────────────────────────────────
+let images     = [];
+let currentIdx = 0;
+let slideTimer = null;
+let cdInterval = null;
+let sleeping   = false;
+let warmingUp  = true;
+let lastStatus = "";
 
-// ── DOM ──────────────────────────────────────────────────────
+// ── DOM ───────────────────────────────────────────────────────
 const stage     = document.getElementById('stage');
 const dot       = document.getElementById('dot');
 const statusTxt = document.getElementById('status-text');
@@ -368,8 +262,9 @@ const warmupBar = document.getElementById('warmup-bar');
 const warmupSub = document.getElementById('warmup-sub');
 const imgName   = document.getElementById('img-name');
 const imgCtr    = document.getElementById('img-counter');
+const noImages  = document.getElementById('no-images');
 
-// ── Uhr ──────────────────────────────────────────────────────
+// ── Uhr ───────────────────────────────────────────────────────
 function updateClock() {
   const n = new Date();
   const h = String(n.getHours()).padStart(2,'0');
@@ -384,63 +279,74 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 15000);
 
-// ── Bilder laden (aus lokalem /bilder Ordner) ────────────────
+// ── Bilder laden ──────────────────────────────────────────────
+// Wird alle IMAGE_POLL_MS Sekunden aufgerufen.
+// Erkennt automatisch neue Bilder nach Google Drive Sync.
 async function loadImages() {
   try {
-    // Verzeichnislisting vom Webserver holen
-    const res  = await fetch('/bilder/');
+    // ?t= verhindert Browser-Cache → immer aktuelle Liste
+    const res  = await fetch('/bilder/?t=' + Date.now());
     const html = await res.text();
     const parser = new DOMParser();
     const doc    = parser.parseFromString(html, 'text/html');
-    const links  = [...doc.querySelectorAll('a[href]')]
-      .map(a => a.getAttribute('href'))
+
+    // Alle Bild-Links aus dem Verzeichnis-Listing holen
+    const links = [...doc.querySelectorAll('a[href]')]
+      .map(a => decodeURIComponent(a.getAttribute('href')))
       .filter(h => /\.(jpg|jpeg|png|gif|webp)$/i.test(h));
 
-    if (links.length > 0) {
-      // Pfade absolut machen
-      images = links.map(l =>
-        l.startsWith('/') ? l : `/bilder/${l}`
-      );
-      preloadNext();
+    if (links.length === 0) {
+      // Noch keine Bilder → Hinweis anzeigen
+      noImages.classList.add('show');
+      return;
     }
+
+    noImages.classList.remove('show');
+
+    // Absolute Pfade bauen
+    const neuePfade = links.map(l =>
+      l.startsWith('/') ? l : `/bilder/${l}`
+    );
+
+    // Prüfen ob sich die Bildliste geändert hat
+    const geaendert = neuePfade.length !== images.length ||
+      neuePfade.some((p, i) => p !== images[i]);
+
+    if (geaendert) {
+      console.log(`Bildliste aktualisiert: ${neuePfade.length} Bilder gefunden`);
+      const alterIdx = currentIdx;
+      images = neuePfade;
+      // Aktuellen Index beibehalten (nicht von vorne anfangen)
+      currentIdx = Math.min(alterIdx, images.length - 1);
+      renderSlides();
+    }
+
   } catch(e) {
-    // Fallback: Demo-Bilder wenn kein Server
-    images = [
-      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80',
-      'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1920&q=80',
-      'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1920&q=80',
-      'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1920&q=80',
-    ];
+    console.warn('Bildliste konnte nicht geladen werden:', e);
   }
-  renderSlides();
 }
 
 function renderSlides() {
   stage.innerHTML = '';
   images.forEach((src, i) => {
     const d = document.createElement('div');
-    d.className = 'slide' + (i === 0 ? ' active' : '');
-    d.style.backgroundImage = `url('${src}')`;
+    d.className = 'slide' + (i === currentIdx ? ' active' : '');
+    d.style.backgroundImage = `url('${src}?t=${Date.now()}')`;
     stage.appendChild(d);
   });
   updateCounter();
 }
 
-function preloadNext() {
-  const next = (currentIdx + 1) % images.length;
-  const img  = new Image();
-  img.src    = images[next];
-}
-
 function updateCounter() {
   if (images.length > 0) {
     imgCtr.textContent = `${currentIdx + 1} / ${images.length}`;
-    const name = images[currentIdx].split('/').pop().replace(/\.[^.]+$/, '');
+    const name = images[currentIdx].split('/').pop()
+      .replace(/\?.*$/, '').replace(/\.[^.]+$/, '');
     imgName.textContent = decodeURIComponent(name);
   }
 }
 
-// ── Slideshow ────────────────────────────────────────────────
+// ── Slideshow ─────────────────────────────────────────────────
 function startSlideshow() {
   if (slideTimer) return;
   slideTimer = setInterval(nextSlide, SLIDE_MS);
@@ -459,10 +365,9 @@ function nextSlide() {
   currentIdx = (currentIdx + 1) % images.length;
   slides[currentIdx].classList.add('active');
   updateCounter();
-  preloadNext();
 }
 
-// ── Schlaf / Aufwachen ───────────────────────────────────────
+// ── Schlaf / Aufwachen ────────────────────────────────────────
 function goToSleep() {
   if (sleeping) return;
   sleeping = true;
@@ -480,14 +385,14 @@ function wakeUp() {
   sleeping = false;
   sleepEl.classList.remove('active');
   startSlideshow();
-  noMotionSince = null;
   cdWrap.classList.remove('show');
   clearInterval(cdInterval);
+  cdInterval = null;
 }
 
-// ── Countdown ────────────────────────────────────────────────
+// ── Countdown ─────────────────────────────────────────────────
 function startCountdown() {
-  if (cdInterval) return; // läuft schon
+  if (cdInterval) return;
   cdWrap.classList.add('show');
   let rem = TIMEOUT_SEC;
   const circ = 110;
@@ -514,25 +419,25 @@ function resetCountdown() {
   cdRing.style.strokeDashoffset = 0;
 }
 
-// ── Aufwärmphase (Animation) ─────────────────────────────────
+// ── Aufwärm-Animation ─────────────────────────────────────────
 function runWarmupAnimation() {
   let pct = 0;
   const step = 100 / WARMUP_SEC;
-  const bar  = setInterval(() => {
+  const bar = setInterval(() => {
     pct = Math.min(pct + step, 100);
     warmupBar.style.width = pct + '%';
-    warmupSub.textContent = `Bereit in ${Math.ceil(WARMUP_SEC - (pct/100)*WARMUP_SEC)}s …`;
+    const rest = Math.ceil(WARMUP_SEC - (pct / 100) * WARMUP_SEC);
+    warmupSub.textContent = rest > 0 ? `Bereit in ${rest}s …` : 'Bereit!';
     if (pct >= 100) clearInterval(bar);
   }, 1000);
 }
 runWarmupAnimation();
 
-// ── Status-Polling (liest status.txt vom Python-Server) ──────
+// ── Status-Polling (liest status.txt vom Python-Script) ───────
 async function pollStatus() {
   try {
-    const res = await fetch('/status.txt?t=' + Date.now());
+    const res    = await fetch('/status.txt?t=' + Date.now());
     const status = (await res.text()).trim();
-
     if (status === lastStatus) return;
     lastStatus = status;
 
@@ -542,10 +447,10 @@ async function pollStatus() {
       statusTxt.textContent = 'Aufwärmen…';
 
     } else if (status === 'active') {
-      // Bewegung oder frisch aufgewacht
       if (warmingUp) {
         warmingUp = false;
         warmupEl.classList.add('hidden');
+        loadImages();
         startSlideshow();
       }
       dot.className = '';
@@ -562,48 +467,25 @@ async function pollStatus() {
       goToSleep();
     }
   } catch(e) {
-    // Server noch nicht bereit — ignorieren
+    // Server noch nicht bereit
   }
 }
 
-// ── Demo-Modus (wenn kein Python-Server läuft) ───────────────
-// Klick = Bewegung simulieren
-let demoTimeout = null;
-document.addEventListener('click', () => {
-  lastStatus = ''; // force update
-  // Direkt Status simulieren
-  if (warmingUp) return;
-  dot.className = '';
-  statusTxt.textContent = 'Bewegung erkannt';
-  resetCountdown();
-  wakeUp();
-  clearTimeout(demoTimeout);
-  demoTimeout = setTimeout(() => {
-    lastStatus = '';
-    dot.className = 'inactive';
-    statusTxt.textContent = 'Keine Bewegung';
-    startCountdown();
-  }, 4000);
-});
+// ── Init ──────────────────────────────────────────────────────
+// Bildliste alle 5 Sekunden prüfen → neue Bilder erscheinen automatisch
+setInterval(loadImages, IMAGE_POLL_MS);
 
-// ── Init ─────────────────────────────────────────────────────
-loadImages();
-setInterval(loadImages, IMAGE_REFRESH);        // Bildliste auffrischen
-setInterval(pollStatus, STATUS_POLL_MS);       // Python-Status abfragen
+// Status alle 500ms prüfen
+setInterval(pollStatus, STATUS_POLL_MS);
 
-// Nach WARMUP_SEC automatisch Demo starten (ohne Python)
+// Nach WARMUP_SEC automatisch starten (auch ohne Python-Server)
 setTimeout(() => {
   if (warmingUp) {
     warmingUp = false;
     warmupEl.classList.add('hidden');
     dot.className = '';
     statusTxt.textContent = 'Bereit';
-    startSlideshow();
-    setTimeout(() => {
-      dot.className = 'inactive';
-      statusTxt.textContent = 'Keine Bewegung';
-      startCountdown();
-    }, 4000);
+    loadImages().then(() => startSlideshow());
   }
 }, WARMUP_SEC * 1000);
 </script>

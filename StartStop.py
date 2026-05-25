@@ -36,7 +36,10 @@ CHECK_INTERVAL = 0.1    # Sekunden zwischen Sensor-Abfragen (0.1 = 10x pro Sekun
 # Google Drive — Ordnernamen anpassen nach: rclone lsd onedrive:
 GDRIVE_REMOTE   = "gdrive:Bilder"        # Google Drive Ordner "Bilder"
 LOCAL_IMAGE_DIR = "/home/admin/bilderrahmen/bilder"
-SYNC_INTERVAL   = 60                     # Sync alle 60 Sekunden
+# Log-Dateien
+LOG_DATEI         = "/home/admin/bilderrahmen/bilderrahmen.log"
+ÄNDERUNGEN_LOG    = "/home/admin/bilderrahmen/änderungen.log"
+SYNC_INTERVAL     = 60                   # Sync alle 60 Sekunden
 
 # Webserver & Chromium
 WEB_DIR   = "/home/admin/bilderrahmen"   # Ordner mit index.html
@@ -55,8 +58,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("/home/admin/bilderrahmen/bilderrahmen.log")
-    ]
+        logging.FileHandler("/home/admin/bilderrahmen/bilderrahmen.log")    ]
 )
 log = logging.getLogger(__name__)
 
@@ -111,6 +113,31 @@ def lade_control(): #für verbindung mit php und json
 
     except Exception as e:
         log.warning(f"Control Fehler: {e}")
+
+def änderungen_loggen(neu: set, geloescht: set):
+    """Schreibt Bild-Änderungen in eine separate Log-Datei."""
+    if not neu and not geloescht:
+        return
+
+    zeitstempel = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    try:
+        with open(ÄNDERUNGEN_LOG, "a", encoding="utf-8") as f:
+            f.write(f"\n{'─' * 50}\n")
+            f.write(f"  Zeitpunkt: {zeitstempel}\n")
+            f.write(f"{'─' * 50}\n")
+
+            if neu:
+                for bild in sorted(neu):
+                    f.write(f"  ✚ HINZUGEFÜGT:  {bild}\n")
+
+            if geloescht:
+                for bild in sorted(geloescht):
+                    f.write(f"  ✖ ENTFERNT:     {bild}\n")
+
+        log.info(f"Änderungen in Log geschrieben → {ÄNDERUNGEN_LOG}")
+    except Exception as e:
+        log.warning(f"Änderungs-Log Fehler: {e}")
 
 # ──────────────────────────────────────────────────────────────
 #  MONITOR & BROWSER STEUERUNG
@@ -392,6 +419,9 @@ def gdrive_thread():
                     log.info(f"  ✖ Entfernt ({len(geloescht)}): {', '.join(sorted(geloescht))}")
                 if not neu and not geloescht:
                     log.info(f"  ↔ Keine Änderungen")
+
+                # Änderungen in separate Log-Datei schreiben
+                änderungen_loggen(neu, geloescht)
 
                 log.info(f"Google Drive-Sync abgeschlossen ✓  ({len(bilder_nachher)} Bilder lokal)")
 
