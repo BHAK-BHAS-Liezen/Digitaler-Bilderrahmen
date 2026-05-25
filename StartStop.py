@@ -259,6 +259,41 @@ def webserver_thread():
 
     # HTTP-Logging deaktivieren (zu viel Output)
     class LeiserHandler(SimpleHTTPRequestHandler):
+
+        def end_headers(self):
+            self.send_header("Cache-Control", "no-store")
+            super().end_headers()
+
+        def do_POST(self):
+
+            if self.path == "/api/control":
+
+                content_length = int(
+                    self.headers["Content-Length"]
+                )
+
+                body = self.rfile.read(content_length)
+
+                data = json.loads(body)
+
+                with open(CONTROL_FILE, "w") as f:
+                    json.dump(data, f, indent=2)
+
+                self.send_response(200)
+
+                self.send_header(
+                    "Content-type",
+                    "application/json"
+                )
+
+                self.end_headers()
+
+                self.wfile.write(
+                    b'{\"success\": true}'
+                )
+
+            else:
+                self.send_error(404)
         def log_message(self, format, *args):
             pass
 

@@ -291,13 +291,13 @@ html, body {
 <button id="menuButton"
 style="
 position:fixed;
-top:50%;
-left:50%;
+top:50px;
+left:50px;
 transform:translate(-50%, -50%);
-width:140px;
-height:140px;
-font-size:60px;
-background:red;
+width:60px;
+height:60px;
+font-size:30px;
+background:black;
 color:white;
 border:none;
 border-radius:20px;
@@ -723,7 +723,7 @@ function monitorAuto(){
 
 async function saveControl(data){
 
-    await fetch("/save.php", {
+    await fetch("/api/control", {
 
         method: "POST",
 
