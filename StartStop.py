@@ -35,14 +35,14 @@ CHECK_INTERVAL = 0.1    # Sekunden zwischen Sensor-Abfragen (0.1 = 10x pro Sekun
 
 # Google Drive — Ordnernamen anpassen nach: rclone lsd onedrive:
 GDRIVE_REMOTE   = "gdrive:Bilder"        # Google Drive Ordner "Bilder"
-LOCAL_IMAGE_DIR = "/home/admin/bilderrahmen/bilder"
+LOCAL_IMAGE_DIR = "/home/admin/Digitaler-Bilderrahmen/bilder"
 # Log-Dateien
-LOG_DATEI         = "/home/admin/bilderrahmen/bilderrahmen.log"
-ÄNDERUNGEN_LOG    = "/home/admin/bilderrahmen/änderungen.log"
+LOG_DATEI         = "/home/admin/Digitaler-Bilderrahmen/bilderrahmen.log"
+ÄNDERUNGEN_LOG    = "/home/admin/Digitaler-Bilderrahmen/änderungen.log"
 SYNC_INTERVAL     = 60                   # Sync alle 60 Sekunden
 
 # Webserver & Chromium
-WEB_DIR   = "/home/admin/bilderrahmen"   # Ordner mit index.html
+WEB_DIR   = "/home/admin/Digitaler-Bilderrahmen"   # Ordner mit index.html
 WEB_PORT  = 8080                         # Port des lokalen Webservers
 # True  = Vollbild (kein Fensterrahmen, kein Cursor) → für fertigen Bilderrahmen
 # False = normales Fenster → zum Testen
@@ -58,7 +58,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("/home/admin/bilderrahmen/bilderrahmen.log")    ]
+        logging.FileHandler("/home/admin/Digitaler-Bilderrahmen/bilderrahmen.log")    ]
 )
 log = logging.getLogger(__name__)
 
