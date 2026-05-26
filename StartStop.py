@@ -4,13 +4,13 @@
 ║                                                              ║
 ║  Funktionen:                                                 ║
 ║  • PIR Motion Sensor erkennt Bewegung (GPIO 4)               ║
-║  • Mikrofon erkennt Geräusche (sounddevice)                  ║
+║  • KY-038 Mikrofon erkennt Geräusche (GPIO 17, DO-Pin)       ║
 ║  • ODER-Logik: Bewegung ODER Geräusch → Monitor an           ║
 ║  • Aufwärmzeit beim Start (Sensor kalibriert sich)           ║
 ║  • Monitor geht nach X Sekunden ohne Aktivität aus           ║
 ║  • Slideshow pausiert im Schlafmodus                         ║
 ║  • Alle Logik läuft in Hintergrund-Threads                   ║
-║  • Google Drive-Sync via rclone (alle 5 Minuten)             ║
+║  • Google Drive-Sync via rclone                              ║
 ║  • Chromium-Fenster zeigt die Slideshow (Vollbild möglich)   ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -21,48 +21,41 @@ import threading
 import subprocess
 import logging
 import json
-import numpy as np
 from datetime import datetime, timedelta
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from gpiozero import MotionSensor
-
-# sounddevice für Mikrofon
-try:
-    import sounddevice as sd
-    MIKROFON_VERFUEGBAR = True
-except ImportError:
-    MIKROFON_VERFUEGBAR = False
-    print("WARNUNG: sounddevice nicht installiert → pip install sounddevice numpy")
+from gpiozero import MotionSensor, Button
 
 # ──────────────────────────────────────────────────────────────
 #  KONFIGURATION — hier anpassen
 # ──────────────────────────────────────────────────────────────
 
-GPIO_PIN        = 4      # GPIO-Pin wo OUT des PIR-Sensors angeschlossen ist
-WARMUP_SEC      = 30     # Sekunden Aufwärmzeit (Sensor kalibriert sich)
-TIMEOUT_SEC     = 30     # Sekunden ohne Aktivität bis Monitor ausgeht
-CONFIRM_COUNT   = 3      # Wie viele Messungen positiv sein müssen (Anti-Falschalarm)
-CHECK_INTERVAL  = 0.1    # Sekunden zwischen Sensor-Abfragen (0.1 = 10x pro Sekunde)
+GPIO_PIN        = 4      # GPIO-Pin: PIR Sensor OUT
+MIC_GPIO_PIN    = 17     # GPIO-Pin: KY-038 DO (Digital Out)
+                         # ← Falls anders angeschlossen, hier ändern!
 
-# Mikrofon-Einstellungen
-MIC_SCHWELLWERT      = 500    # RMS-Lautstärke ab der Aktivität erkannt wird (0–32767)
-MIC_SAMPLERATE       = 16000  # Hz — 16000 reicht für Lautstärke-Erkennung
-MIC_BLOCKSIZE        = 1024   # Samples pro Block (~64ms bei 16kHz)
-MIC_DEVICE           = None   # None = Standard-Gerät, oder Geräte-Index z.B. 1
+WARMUP_SEC      = 30     # Sekunden Aufwärmzeit
+TIMEOUT_SEC     = 30     # Sekunden ohne Aktivität bis Monitor aus
+CONFIRM_COUNT   = 3      # Anti-Falschalarm für PIR
+CHECK_INTERVAL  = 0.1    # Sensor-Abfrageintervall in Sekunden
 
-# Google Drive — Ordnernamen anpassen nach: rclone lsd onedrive:
+# KY-038 Einstellungen
+# Der blaue Poti auf dem Modul regelt die Hardware-Empfindlichkeit.
+# MIC_COOLDOWN verhindert dass ein Geräusch den Timeout 1000x zurücksetzt.
+MIC_COOLDOWN    = 2.0    # Sekunden Pause nach erkanntem Geräusch
+
+# Google Drive
 GDRIVE_REMOTE   = "gdrive:Bilder"
 LOCAL_IMAGE_DIR = "/home/admin/Digitaler-Bilderrahmen/bilder"
 
 # Log-Dateien
-LOG_DATEI         = "/home/admin/Digitaler-Bilderrahmen/bilderrahmen.log"
-ÄNDERUNGEN_LOG    = "/home/admin/Digitaler-Bilderrahmen/änderungen.log"
-SYNC_INTERVAL     = 60
+LOG_DATEI      = "/home/admin/Digitaler-Bilderrahmen/bilderrahmen.log"
+ÄNDERUNGEN_LOG = "/home/admin/Digitaler-Bilderrahmen/änderungen.log"
+SYNC_INTERVAL  = 60
 
 # Webserver & Chromium
-WEB_DIR   = "/home/admin/Digitaler-Bilderrahmen"
-WEB_PORT  = 8080
-VOLLBILD  = False
+WEB_DIR  = "/home/admin/Digitaler-Bilderrahmen"
+WEB_PORT = 8080
+VOLLBILD = False
 
 # ──────────────────────────────────────────────────────────────
 #  LOGGING
@@ -86,8 +79,8 @@ log = logging.getLogger(__name__)
 state_lock        = threading.Lock()
 screen_on         = True
 last_motion_time  = datetime.now()
-motion_active     = False   # PIR aktiv
-sound_active      = False   # Mikrofon aktiv
+motion_active     = False
+sound_active      = False
 system_ready      = False
 browser_proc      = None
 
@@ -100,7 +93,6 @@ SENSOR_STATUS = os.path.join(WEB_DIR, "data/sensor_status.json")
 # ──────────────────────────────────────────────────────────────
 
 def status_setzen(status: str):
-    """Schreibt den aktuellen Status in status.txt (für index.html)."""
     try:
         with open(status_datei, "w") as f:
             f.write(status)
@@ -110,10 +102,7 @@ def status_setzen(status: str):
 
 
 def sensor_status_schreiben():
-    """
-    Schreibt PIR- und Mikrofon-Status in data/sensor_status.json.
-    Das PHP-Panel liest diese Datei für den Live-Status.
-    """
+    """Schreibt PIR- und Mikrofon-Status für das PHP-Panel."""
     try:
         daten = {
             "zeitstempel":    datetime.now().strftime("%H:%M:%S"),
@@ -121,7 +110,7 @@ def sensor_status_schreiben():
             "mikrofon_aktiv": sound_active,
             "monitor_an":     screen_on,
             "system_bereit":  system_ready,
-            "mic_schwellwert": MIC_SCHWELLWERT,
+            "mic_gpio":       MIC_GPIO_PIN,
             "timeout_sek":    TIMEOUT_SEC,
         }
         os.makedirs(os.path.dirname(SENSOR_STATUS), exist_ok=True)
@@ -133,8 +122,7 @@ def sensor_status_schreiben():
 
 def aktivitaet_melden(quelle: str):
     """
-    Wird von PIR-Thread UND Mikrofon-Thread aufgerufen.
-    ODER-Logik: Egal welche Quelle → Monitor an, Timeout zurücksetzen.
+    ODER-Logik: PIR oder Mikrofon → Monitor an, Timeout zurücksetzen.
     """
     global last_motion_time
 
@@ -143,21 +131,19 @@ def aktivitaet_melden(quelle: str):
 
     status_setzen("active")
     monitor_an()
-
     sensor_status_schreiben()
-    log.info(f"Aktivität erkannt [{quelle}] 👤🔊")
+    log.info(f"Aktivität erkannt [{quelle}]")
 
 
 def lade_control():
     """Liest control.json und übernimmt Einstellungen."""
-    global TIMEOUT_SEC, MIC_SCHWELLWERT
+    global TIMEOUT_SEC
 
     try:
         with open(CONTROL_FILE, "r") as f:
             data = json.load(f)
 
-        TIMEOUT_SEC     = data.get("timeout", 30)
-        MIC_SCHWELLWERT = data.get("mic_schwellwert", 500)
+        TIMEOUT_SEC = data.get("timeout", 30)
 
         monitor_status = data.get("monitor", "on")
         if monitor_status == "off":
@@ -165,19 +151,14 @@ def lade_control():
         elif monitor_status == "on":
             monitor_an()
 
-        log.info(f"Control geladen: {data}")
-
     except Exception as e:
         log.warning(f"Control Fehler: {e}")
 
 
 def änderungen_loggen(neu: set, geloescht: set):
-    """Schreibt Bild-Änderungen in eine separate Log-Datei."""
     if not neu and not geloescht:
         return
-
     zeitstempel = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
     try:
         with open(ÄNDERUNGEN_LOG, "a", encoding="utf-8") as f:
             f.write(f"\n{'─' * 50}\n")
@@ -189,8 +170,6 @@ def änderungen_loggen(neu: set, geloescht: set):
             if geloescht:
                 for bild in sorted(geloescht):
                     f.write(f"  ✖ ENTFERNT:     {bild}\n")
-
-        log.info(f"Änderungen in Log geschrieben → {ÄNDERUNGEN_LOG}")
     except Exception as e:
         log.warning(f"Änderungs-Log Fehler: {e}")
 
@@ -200,53 +179,38 @@ def änderungen_loggen(neu: set, geloescht: set):
 # ──────────────────────────────────────────────────────────────
 
 def monitor_an():
-    """Monitor einschalten und Slideshow fortsetzen."""
     global screen_on
-
     with state_lock:
         bereits_an = screen_on
-
     if bereits_an:
         return
-
     log.info("▶  Monitor AN")
     os.system("vcgencmd display_power 1")
     status_setzen("active")
-
     with state_lock:
         screen_on = True
-
     sensor_status_schreiben()
 
 
 def monitor_aus():
-    """Monitor ausschalten und Slideshow pausieren."""
     global screen_on
-
     with state_lock:
         bereits_aus = not screen_on
-
     if bereits_aus:
         return
-
     log.info("◼  Monitor AUS — Schlafmodus")
     status_setzen("sleeping")
     time.sleep(1.5)
     os.system("vcgencmd display_power 0")
-
     with state_lock:
         screen_on = False
-
     sensor_status_schreiben()
 
 
 def browser_starten():
-    """Chromium-Fenster mit der Slideshow öffnen."""
     global browser_proc
-
     time.sleep(2)
     url = f"http://localhost:{WEB_PORT}"
-
     chromium_cmd = [
         "chromium-browser",
         "--noerrdialogs",
@@ -256,27 +220,23 @@ def browser_starten():
         "--autoplay-policy=no-user-gesture-required",
         url
     ]
-
     if VOLLBILD:
         chromium_cmd += ["--kiosk", "--start-fullscreen"]
     else:
         chromium_cmd += ["--start-maximized"]
-
     try:
         browser_proc = subprocess.Popen(
             chromium_cmd,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
-        modus = "Vollbild" if VOLLBILD else "Fenster (maximiert)"
-        log.info(f"Chromium gestartet — Modus: {modus}")
-        log.info(f"Slideshow erreichbar unter: {url}")
+        log.info(f"Chromium gestartet — {'Vollbild' if VOLLBILD else 'Fenster'}")
+        log.info(f"Slideshow: {url}")
     except FileNotFoundError:
-        log.error("Chromium nicht gefunden! → sudo apt install chromium-browser")
+        log.error("Chromium nicht gefunden!")
 
 
 def browser_stoppen():
-    """Chromium-Fenster schließen."""
     global browser_proc
     if browser_proc and browser_proc.poll() is None:
         browser_proc.terminate()
@@ -284,7 +244,6 @@ def browser_stoppen():
             browser_proc.wait(timeout=3)
         except subprocess.TimeoutExpired:
             browser_proc.kill()
-        log.info("Chromium geschlossen")
     browser_proc = None
 
 
@@ -305,7 +264,7 @@ def webserver_thread():
 
 
 # ──────────────────────────────────────────────────────────────
-#  THREAD 2: PIR-SENSOR
+#  THREAD 2: PIR-SENSOR (GPIO 4)
 # ──────────────────────────────────────────────────────────────
 
 def pir_thread():
@@ -317,10 +276,9 @@ def pir_thread():
         pir = MotionSensor(pin=GPIO_PIN, sample_rate=10, threshold=0.5)
     except Exception as e:
         log.error(f"PIR-Sensor Fehler: {e}")
-        log.error("Prüfe: Ist das OUT-Kabel wirklich an GPIO 4 angeschlossen?")
         return
 
-    # ── Aufwärmphase ──────────────────────────────────────────
+    # Aufwärmphase
     log.info(f"Aufwärmphase: {WARMUP_SEC} Sekunden...")
     status_setzen("warming_up")
 
@@ -328,112 +286,91 @@ def pir_thread():
         log.info(f"  Sensor bereit in {verbleibend}s ...")
         time.sleep(5)
 
-    log.info("Sensor kalibriert und bereit ✓")
+    log.info("PIR-Sensor bereit ✓")
     status_setzen("active")
     system_ready = True
 
-    # ── Bewegungserkennung ────────────────────────────────────
     counter = 0
 
     while True:
         if pir.motion_detected:
             counter += 1
-
             if counter >= CONFIRM_COUNT:
                 war_inaktiv = not motion_active
-
                 with state_lock:
                     motion_active = True
-
                 if war_inaktiv:
                     aktivitaet_melden("PIR")
-
         else:
             if motion_active:
                 log.info("PIR: Keine Bewegung mehr.")
-
             counter = 0
-
             with state_lock:
                 motion_active = False
-
             sensor_status_schreiben()
 
         time.sleep(CHECK_INTERVAL)
 
 
 # ──────────────────────────────────────────────────────────────
-#  THREAD 3: MIKROFON
-#  Misst kontinuierlich den RMS-Lautstärkepegel.
-#  Überschreitet er MIC_SCHWELLWERT → aktivitaet_melden()
+#  THREAD 3: KY-038 MIKROFON (GPIO 17, DO-Pin)
+#
+#  Der KY-038 gibt am DO-Pin ein digitales Signal aus:
+#  LOW  = Stille  (unter Schwellwert des Potis)
+#  HIGH = Geräusch erkannt (über Schwellwert)
+#
+#  Den blauen Poti auf dem Modul drehen um Empfindlichkeit
+#  einzustellen — im Uhrzeigersinn = weniger empfindlich.
 # ──────────────────────────────────────────────────────────────
 
 def mikrofon_thread():
     global sound_active
 
-    if not MIKROFON_VERFUEGBAR:
-        log.error("Mikrofon-Thread: sounddevice nicht verfügbar, Thread beendet.")
-        return
-
-    log.info(f"Mikrofon-Thread gestartet (Schwellwert: {MIC_SCHWELLWERT})")
-
     # Warten bis System bereit
     while not system_ready:
         time.sleep(0.5)
 
-    def audio_callback(indata, frames, time_info, status):
-        """Wird von sounddevice für jeden Audio-Block aufgerufen."""
-        global sound_active
-
-        if status:
-            log.warning(f"Audio-Status: {status}")
-
-        # RMS-Lautstärke berechnen (0–32767 bei int16)
-        rms = int(np.sqrt(np.mean(indata.astype(np.float32) ** 2)))
-
-        if rms > MIC_SCHWELLWERT:
-            war_inaktiv = not sound_active
-            sound_active = True
-
-            if war_inaktiv:
-                log.info(f"🔊 Geräusch erkannt (RMS: {rms} > {MIC_SCHWELLWERT})")
-                aktivitaet_melden("Mikrofon")
-
-            sensor_status_schreiben()
-
-        else:
-            if sound_active:
-                log.info(f"Mikrofon: Stille (RMS: {rms})")
-                sound_active = False
-                sensor_status_schreiben()
+    log.info(f"KY-038 Mikrofon-Thread gestartet (GPIO {MIC_GPIO_PIN})")
 
     try:
-        log.info(f"Mikrofon wird geöffnet (Gerät: {MIC_DEVICE or 'Standard'}, "
-                 f"{MIC_SAMPLERATE} Hz, Blockgröße: {MIC_BLOCKSIZE})")
-
-        with sd.InputStream(
-            device=MIC_DEVICE,
-            channels=1,
-            samplerate=MIC_SAMPLERATE,
-            blocksize=MIC_BLOCKSIZE,
-            dtype='int16',
-            callback=audio_callback
-        ):
-            log.info("Mikrofon aktiv ✓ — Lausche auf Geräusche...")
-            # Thread läuft so lange wie das Programm
-            while True:
-                time.sleep(1)
-
-    except sd.PortAudioError as e:
-        log.error(f"Mikrofon Fehler: {e}")
-        log.error("Prüfe: Ist ein Mikrofon angeschlossen? → python3 -c \"import sounddevice; print(sounddevice.query_devices())\"")
+        # Button mit pull_up=False da KY-038 DO aktiv HIGH ist
+        mic = Button(pin=MIC_GPIO_PIN, pull_up=False, bounce_time=0.05)
+        log.info(f"KY-038 Mikrofon bereit ✓ (GPIO {MIC_GPIO_PIN})")
     except Exception as e:
-        log.error(f"Unerwarteter Mikrofon-Fehler: {e}")
+        log.error(f"KY-038 Mikrofon Fehler: {e}")
+        log.error(f"Prüfe: DO-Kabel an GPIO {MIC_GPIO_PIN} angeschlossen?")
+        return
+
+    letztes_geraeusch = 0
+
+    while True:
+        if mic.is_pressed:
+            # DO-Pin HIGH = Geräusch erkannt
+            jetzt = time.time()
+
+            war_inaktiv = not sound_active
+            with state_lock:
+                sound_active = True
+
+            # Cooldown: nicht bei jedem einzelnen Impuls aktivieren
+            if war_inaktiv or (jetzt - letztes_geraeusch) > MIC_COOLDOWN:
+                log.info(f"🔊 Geräusch erkannt (GPIO {MIC_GPIO_PIN})")
+                aktivitaet_melden("Mikrofon")
+                letztes_geraeusch = jetzt
+
+        else:
+            # DO-Pin LOW = Stille
+            if sound_active:
+                log.info("Mikrofon: Stille")
+                with state_lock:
+                    sound_active = False
+                sensor_status_schreiben()
+
+        time.sleep(CHECK_INTERVAL)
 
 
 # ──────────────────────────────────────────────────────────────
 #  THREAD 4: TIMEOUT-WÄCHTER
-#  Kein PIR UND kein Mikrofon → nach TIMEOUT_SEC Monitor aus.
 # ──────────────────────────────────────────────────────────────
 
 def timeout_thread():
@@ -454,7 +391,6 @@ def timeout_thread():
         if inaktiv_seit > timedelta(seconds=TIMEOUT_SEC):
             if s_on:
                 log.info(f"Keine Aktivität seit {TIMEOUT_SEC}s → Monitor aus.")
-                # Status auf no_motion setzen damit Frontend den Countdown sieht
                 status_setzen("no_motion")
                 monitor_aus()
 
@@ -472,7 +408,6 @@ def timeout_thread():
 # ──────────────────────────────────────────────────────────────
 
 def bilder_liste():
-    """Gibt ein Set mit allen lokalen Bilddateinamen zurück."""
     if not os.path.isdir(LOCAL_IMAGE_DIR):
         return set()
     return set(
@@ -513,28 +448,25 @@ def gdrive_thread():
                 bilder_nachher = bilder_liste()
                 neu       = bilder_nachher - bilder_vorher
                 geloescht = bilder_vorher  - bilder_nachher
-
                 if neu:
-                    log.info(f"  ✚ Neu hinzugefügt ({len(neu)}): {', '.join(sorted(neu))}")
+                    log.info(f"  ✚ Neu ({len(neu)}): {', '.join(sorted(neu))}")
                 if geloescht:
                     log.info(f"  ✖ Entfernt ({len(geloescht)}): {', '.join(sorted(geloescht))}")
                 if not neu and not geloescht:
-                    log.info(f"  ↔ Keine Änderungen")
-
+                    log.info("  ↔ Keine Änderungen")
                 änderungen_loggen(neu, geloescht)
-                log.info(f"Google Drive-Sync abgeschlossen ✓  ({len(bilder_nachher)} Bilder lokal)")
-
+                log.info(f"Sync abgeschlossen ✓  ({len(bilder_nachher)} Bilder)")
             else:
                 log.warning(f"rclone Fehler: {result.stderr.strip()}")
 
         except FileNotFoundError:
-            log.error("rclone nicht gefunden! → sudo apt install rclone")
+            log.error("rclone nicht gefunden!")
         except subprocess.TimeoutExpired:
-            log.warning("Sync Timeout — nächster Versuch in 5 Min.")
+            log.warning("Sync Timeout.")
         except Exception as e:
             log.error(f"Sync-Fehler: {e}")
 
-        log.info(f"Nächster Sync in {SYNC_INTERVAL} Sekunden.")
+        log.info(f"Nächster Sync in {SYNC_INTERVAL}s.")
         time.sleep(SYNC_INTERVAL)
 
 
@@ -555,11 +487,11 @@ def control_thread():
 def main():
     log.info("=" * 55)
     log.info("   Digitaler Bilderrahmen — Start")
-    log.info(f"   GPIO Pin:         {GPIO_PIN}")
+    log.info(f"   PIR GPIO Pin:     {GPIO_PIN}")
+    log.info(f"   Mikrofon GPIO:    {MIC_GPIO_PIN}  (KY-038 DO)")
     log.info(f"   Aufwärmzeit:      {WARMUP_SEC}s")
     log.info(f"   Timeout:          {TIMEOUT_SEC}s")
-    log.info(f"   Mikrofon:         {'verfügbar ✓' if MIKROFON_VERFUEGBAR else 'NICHT verfügbar ✗'}")
-    log.info(f"   Mic-Schwellwert:  {MIC_SCHWELLWERT}")
+    log.info(f"   Mic Cooldown:     {MIC_COOLDOWN}s")
     log.info(f"   Google Drive:     {GDRIVE_REMOTE}")
     log.info(f"   Vollbild:         {VOLLBILD}")
     log.info("=" * 55)
@@ -584,10 +516,10 @@ def main():
         t.start()
         log.info(f"Thread gestartet: {t.name}")
 
-    log.info("Chromium-Fenster wird geöffnet...")
+    log.info("Chromium wird geöffnet...")
     browser_starten()
 
-    log.info("Warte auf Aufwärmphase des Sensors...")
+    log.info("Warte auf Aufwärmphase...")
     while not system_ready:
         time.sleep(1)
 
@@ -596,7 +528,6 @@ def main():
     try:
         while True:
             time.sleep(1)
-
     except KeyboardInterrupt:
         log.info("\nBeendet (Strg+C).")
         status_setzen("sleeping")
