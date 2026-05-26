@@ -1,28 +1,6 @@
-09:53:18  [GDrive    ]  rclone Fehler: 2026/05/19 09:53:18 Failed to create file system for "gdrive:Bilder": couldn't find root directory ID: googleapi: Error 403: Quota exceeded for quota metric 'Queries' and limit 'Queries per minute' of service 'drive.googleapis.com' for consumer 'project_number:202264815644'.
-Details:
-[
-  {
-    "@type": "type.googleapis.com/google.rpc.ErrorInfo",
-    "domain": "googleapis.com",
-    "metadata": {
-      "consumer": "projects/202264815644",
-      "quota_limit": "defaultPerMinutePerProject",
-      "quota_limit_value": "840000",
-      "quota_location": "global",
-      "quota_metric": "drive.googleapis.com/default",
-      "quota_unit": "1/min/{project}",
-      "service": "drive.googleapis.com"
-    },
-    "reason": "RATE_LIMIT_EXCEEDED"
-  },
-  {
-    "@type": "type.googleapis.com/google.rpc.Help",
-    "links": [
-      {
-        "description": "Request a higher quota limit.",
-        "url": "https://cloud.google.com/docs/quotas/help/request_increase"
-      }
-    ]
-  }
-]
-, rateLimitExceeded
+Traceback (most recent call last):
+  File "/home/admin/Digitaler-Bilderrahmen/StartStop.py", line 31, in <module>
+    import sounddevice as sd
+  File "/home/admin/.local/lib/python3.11/site-packages/sounddevice.py", line 72, in <module>
+    raise OSError('PortAudio library not found')
+OSError: PortAudio library not found
