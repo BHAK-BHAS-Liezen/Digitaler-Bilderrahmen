@@ -1,6 +1,5 @@
-Traceback (most recent call last):
-  File "/home/admin/Digitaler-Bilderrahmen/StartStop.py", line 31, in <module>
-    import sounddevice as sd
-  File "/home/admin/.local/lib/python3.11/site-packages/sounddevice.py", line 72, in <module>
-    raise OSError('PortAudio library not found')
-OSError: PortAudio library not found
+10:44:14  [GDrive    ]  rclone Fehler: 2026/05/26 10:44:14 Failed to create file system for "gdrive:Bilder": couldn't find root directory ID: Get "https://www.googleapis.com/drive/v3/files/root?alt=json&fields=id&prettyPrint=false&supportsAllDrives=true": couldn't fetch token - maybe it has expired? - refresh with "rclone config reconnect gdrive:": oauth2: cannot fetch token: 400 Bad Request
+Response: {
+  "error": "invalid_grant",
+  "error_description": "Token has been expired or revoked."
+}
