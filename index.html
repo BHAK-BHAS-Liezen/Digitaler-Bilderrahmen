@@ -182,7 +182,7 @@ html, body {
   letter-spacing: 0.25em; text-transform: uppercase; color: rgba(200,169,110,0.4);
 }
 
-/* Button vom Controlpanel -- jetzt verbunden mit control. php und index = Hauptseite */
+/* Button vom Controlpanel -- jetzt verbunden mit control.php und index = Hauptseite */
 
 #menuBtn {
     position: fixed;
@@ -196,27 +196,39 @@ html, body {
     border: none;
     border-radius: 10px;
 
-    background: white;
+    background: rgba(200,169,110,0.9);
+    color: #080808;
     cursor: pointer;
     font-size: 24px;
+    font-weight: bold;
+    transition: background 0.3s, transform 0.2s;
+}
+
+#menuBtn:hover {
+    background: var(--gold);
+    transform: scale(1.05);
+}
+
+#menuBtn:active {
+    transform: scale(0.95);
 }
 
 #controlPanel {
     display: none;
 
     position: fixed;
-    top: 70px;
-    left: 10px;
+    top: 80px;
+    left: 20px;
 
-    width: 400px;
-    height: 600px;
+    width: 420px;
+    max-height: 70vh;
 
     background: white;
-
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.7);
 
-    z-index: 9999;
+    z-index: 9998;
 }
 
 #controlPanel iframe {
@@ -225,21 +237,28 @@ html, body {
     border: none;
 }
 
+#controlPanelOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9997;
+}
+
+#controlPanelOverlay.active {
+    display: block;
+}
+
 </style>
 </head>
 <body>
 
 
 
-
-<button id="menuBtn"> Menü </button>
+<button id="menuBtn">⚙</button>
+<div id="controlPanelOverlay"></div>
 <div id="controlPanel">
-  <iframe scr="http://localhost/control.php"
-  style="width:100%;hight:100%;border:5px solid red;background:white"></iframe>
+  <iframe src="control.php" style="width:100%;height:100%;border:none;background:white"></iframe>
 </div>
-
-
-
 
 
 
@@ -549,18 +568,35 @@ setTimeout(() => {
 }, WARMUP_SEC * 1000);
 
 
-/* Verbindung Button und control.php oder so */
+/* Control Panel - Menü öffnen/schließen */
 const menuBtn = document.getElementById("menuBtn");
 const panel = document.getElementById("controlPanel");
+const overlay = document.getElementById("controlPanelOverlay");
 
-menuBtn.addEventListener("click", () => {
-
+menuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    
     if (panel.style.display === "none" || panel.style.display === "") {
         panel.style.display = "block";
+        overlay.classList.add("active");
     } else {
         panel.style.display = "none";
+        overlay.classList.remove("active");
     }
+});
 
+// Schließe Panel wenn auf Overlay geklickt wird
+overlay.addEventListener("click", () => {
+    panel.style.display = "none";
+    overlay.classList.remove("active");
+});
+
+// Schließe Panel wenn ESC gedrückt wird
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+        panel.style.display = "none";
+        overlay.classList.remove("active");
+    }
 });
 </script>
 </body>
