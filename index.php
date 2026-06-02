@@ -1,0 +1,606 @@
+<?php
+// ── Sichert den Webserver für PHP-Ausführung
+// Diese Datei wird als index.php ausgeführt und ladet control.php korrekt in iframes
+?><!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bilderrahmen</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;1,300&family=Raleway:wght@100;200;300&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --gold: #c8a96e;
+  --gold-dim: rgba(200,169,110,0.4);
+  --white: #f5f0e8;
+  --dark: #080808;
+  --glass: rgba(8,8,8,0.6);
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--dark);
+  overflow: hidden;
+  cursor: none;
+}
+
+#stage {
+  position: fixed; inset: 0;
+  z-index: 0;
+}
+.slide {
+  position: absolute; inset: 0;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 2.5s cubic-bezier(0.4,0,0.2,1);
+}
+.slide.active {
+  opacity: 1;
+  animation: drift 12s ease-in-out forwards;
+}
+@keyframes drift {
+  from { transform: scale(1.00); }
+  to   { transform: scale(1.07) translateX(-15px); }
+}
+
+#vignette {
+  position: fixed; inset: 0; z-index: 1;
+  background:
+    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(0,0,0,0.75) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 20%, transparent 75%, rgba(0,0,0,0.5) 100%);
+  pointer-events: none;
+}
+
+#frame {
+  position: fixed; inset: 12px; z-index: 2;
+  pointer-events: none;
+  border: 1px solid rgba(200,169,110,0.18);
+}
+.fc {
+  position: absolute;
+  width: 28px; height: 28px;
+  border-color: var(--gold);
+  border-style: solid;
+  opacity: 0.6;
+}
+.fc.tl { top: -1px; left: -1px;   border-width: 2px 0 0 2px; }
+.fc.tr { top: -1px; right: -1px;  border-width: 2px 2px 0 0; }
+.fc.bl { bottom: -1px; left: -1px;  border-width: 0 0 2px 2px; }
+.fc.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+#clock-wrap {
+  position: fixed; bottom: 40px; left: 48px; z-index: 10;
+}
+#time {
+  font-family: 'Playfair Display', serif;
+  font-weight: 300; font-size: 80px;
+  color: var(--white); letter-spacing: -0.03em; line-height: 1;
+  text-shadow: 0 0 60px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8);
+}
+#date {
+  font-family: 'Raleway', sans-serif;
+  font-weight: 200; font-size: 12px;
+  letter-spacing: 0.35em; text-transform: uppercase;
+  color: var(--gold); margin-top: 8px;
+}
+
+#img-name {
+  position: fixed; bottom: 42px; right: 48px; z-index: 10;
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-weight: 300; font-size: 15px;
+  color: rgba(245,240,232,0.5); letter-spacing: 0.08em;
+}
+
+#status {
+  position: fixed; top: 28px; right: 36px; z-index: 10;
+  display: flex; align-items: center; gap: 9px;
+  background: var(--glass);
+  border: 1px solid var(--gold-dim);
+  backdrop-filter: blur(16px);
+  border-radius: 100px;
+  padding: 9px 18px 9px 12px;
+}
+#dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #6fcf97;
+  box-shadow: 0 0 0 2px rgba(111,207,151,0.25);
+  transition: background 0.4s, box-shadow 0.4s;
+  flex-shrink: 0;
+}
+#dot.inactive { background: #eb5757; box-shadow: 0 0 0 2px rgba(235,87,87,0.25); }
+#dot.warmup  {
+  background: var(--gold); box-shadow: 0 0 0 2px rgba(200,169,110,0.3);
+  animation: pulse-gold 1.5s ease-in-out infinite;
+}
+@keyframes pulse-gold { 0%,100%{opacity:1} 50%{opacity:0.4} }
+#status-text {
+  font-family: 'Raleway', sans-serif;
+  font-weight: 300; font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--white);
+}
+
+#countdown { position: fixed; top: 22px; right: 136px; z-index: 10; opacity: 0; transition: opacity 0.6s; }
+#countdown.show { opacity: 1; }
+#cd-svg { width: 44px; height: 44px; }
+#cd-ring {
+  stroke-dasharray: 110; stroke-dashoffset: 0;
+  transform-origin: center; transform: rotate(-90deg);
+  transition: stroke-dashoffset 1s linear;
+}
+#cd-num { font-family:'Raleway',sans-serif; font-size:11px; font-weight:200; fill:var(--white); dominant-baseline:middle; text-anchor:middle; }
+
+#sleep {
+  position: fixed; inset: 0; z-index: 50;
+  background: #000; opacity: 0; pointer-events: none;
+  transition: opacity 2s ease;
+  display: flex; align-items: center; justify-content: center;
+}
+#sleep.active { opacity: 1; pointer-events: all; }
+#sleep-inner { text-align: center; opacity: 0; transition: opacity 1s ease 2s; }
+#sleep.active #sleep-inner { opacity: 1; }
+#sleep-ring {
+  width: 48px; height: 48px;
+  border: 1px solid rgba(200,169,110,0.2); border-radius: 50%;
+  margin: 0 auto 20px;
+  animation: breathe 4s ease-in-out infinite;
+}
+@keyframes breathe { 0%,100%{transform:scale(1);opacity:0.3} 50%{transform:scale(1.15);opacity:0.7} }
+#sleep-label {
+  font-family: 'Raleway', sans-serif; font-weight: 100; font-size: 10px;
+  letter-spacing: 0.5em; text-transform: uppercase; color: rgba(200,169,110,0.3);
+}
+
+#warmup {
+  position: fixed; inset: 0; z-index: 40;
+  background: radial-gradient(ellipse at center, #0d0c0a 0%, #000 100%);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 24px;
+  transition: opacity 1.5s ease;
+}
+#warmup.hidden { opacity: 0; pointer-events: none; }
+#warmup-title { font-family:'Playfair Display',serif; font-style:italic; font-weight:300; font-size:28px; color:var(--gold); letter-spacing:0.05em; }
+#warmup-bar-wrap { width:200px; height:1px; background:rgba(200,169,110,0.2); overflow:hidden; }
+#warmup-bar { height:100%; width:0%; background:var(--gold); transition:width 1s linear; }
+#warmup-sub { font-family:'Raleway',sans-serif; font-weight:200; font-size:10px; letter-spacing:0.3em; text-transform:uppercase; color:rgba(200,169,110,0.45); }
+
+#img-counter {
+  position: fixed; top: 28px; left: 48px; z-index: 10;
+  font-family: 'Raleway', sans-serif; font-weight: 200; font-size: 10px;
+  letter-spacing: 0.25em; color: rgba(200,169,110,0.5);
+}
+
+/* Kein Bild gefunden Hinweis */
+#no-images {
+  position: fixed; inset: 0; z-index: 5;
+  display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+}
+#no-images.show { display: flex; }
+#no-images-text {
+  font-family: 'Raleway', sans-serif; font-weight: 200; font-size: 13px;
+  letter-spacing: 0.25em; text-transform: uppercase; color: rgba(200,169,110,0.4);
+}
+
+/* Button vom Controlpanel -- jetzt verbunden mit control.php und index = Hauptseite */
+
+#menuBtn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 9999;
+
+    width: 50px;
+    height: 50px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: rgba(200,169,110,0.9);
+    color: #080808;
+    cursor: pointer;
+    font-size: 24px;
+    font-weight: bold;
+    transition: background 0.3s, transform 0.2s;
+}
+
+#menuBtn:hover {
+    background: var(--gold);
+    transform: scale(1.05);
+}
+
+#menuBtn:active {
+    transform: scale(0.95);
+}
+
+#controlPanel {
+    display: none;
+
+    position: fixed;
+    top: 80px;
+    left: 20px;
+
+    width: 420px;
+    max-height: 70vh;
+
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+
+    z-index: 9998;
+}
+
+#controlPanel iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+#controlPanelOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9997;
+}
+
+#controlPanelOverlay.active {
+    display: block;
+}
+
+</style>
+</head>
+<body>
+
+
+
+<button id="menuBtn">⚙</button>
+<div id="controlPanelOverlay"></div>
+<div id="controlPanel">
+  <iframe src="control.php" style="width:100%;height:100%;border:none;"></iframe>
+</div>
+
+
+
+
+<div id="warmup">
+  <div id="warmup-title">Bilderrahmen</div>
+  <div id="warmup-bar-wrap"><div id="warmup-bar"></div></div>
+  <div id="warmup-sub">Sensor kalibriert sich…</div>
+</div>
+
+<div id="stage"></div>
+<div id="vignette"></div>
+
+<div id="frame">
+  <div class="fc tl"></div><div class="fc tr"></div>
+  <div class="fc bl"></div><div class="fc br"></div>
+</div>
+
+<div id="no-images">
+  <div id="no-images-text">Warte auf Bilder vom Google Drive …</div>
+</div>
+
+<div id="img-counter"></div>
+
+<div id="status">
+  <div id="dot" class="warmup"></div>
+  <span id="status-text">Aufwärmen…</span>
+</div>
+
+<div id="countdown">
+  <svg id="cd-svg" viewBox="0 0 44 44">
+    <circle cx="22" cy="22" r="17.5" fill="none" stroke="rgba(200,169,110,0.15)" stroke-width="1.5"/>
+    <circle id="cd-ring" cx="22" cy="22" r="17.5" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/>
+    <text id="cd-num" x="22" y="22">–</text>
+  </svg>
+</div>
+
+<div id="clock-wrap">
+  <div id="time">00:00</div>
+  <div id="date">Montag, 1. Januar</div>
+</div>
+
+<div id="img-name"></div>
+
+<div id="sleep">
+  <div id="sleep-inner">
+    <div id="sleep-ring"></div>
+    <div id="sleep-label">Ruhemodus</div>
+  </div>
+</div>
+
+<script>
+// ── Konfiguration ─────────────────────────────────────────────
+const TIMEOUT_SEC    = 30;    // muss mit Python TIMEOUT_SEC übereinstimmen
+const WARMUP_SEC     = 30;    // muss mit Python WARMUP_SEC übereinstimmen
+const SLIDE_MS       = 7000;  // Millisekunden pro Bild
+const STATUS_POLL_MS = 500;   // wie oft status.txt gelesen wird
+const IMAGE_POLL_MS  = 5000;  // alle 5 Sekunden Bildliste prüfen (erkennt neue Bilder sofort)
+
+// ── Zustand ───────────────────────────────────────────────────
+let images     = [];
+let currentIdx = 0;
+let slideTimer = null;
+let cdInterval = null;
+let sleeping   = false;
+let warmingUp  = true;
+let lastStatus = "";
+
+// ── DOM ───────────────────────────────────────────────────────
+const stage     = document.getElementById('stage');
+const dot       = document.getElementById('dot');
+const statusTxt = document.getElementById('status-text');
+const cdWrap    = document.getElementById('countdown');
+const cdRing    = document.getElementById('cd-ring');
+const cdNum     = document.getElementById('cd-num');
+const sleepEl   = document.getElementById('sleep');
+const warmupEl  = document.getElementById('warmup');
+const warmupBar = document.getElementById('warmup-bar');
+const warmupSub = document.getElementById('warmup-sub');
+const imgName   = document.getElementById('img-name');
+const imgCtr    = document.getElementById('img-counter');
+const noImages  = document.getElementById('no-images');
+
+// ── Uhr ───────────────────────────────────────────────────────
+function updateClock() {
+  const n = new Date();
+  const h = String(n.getHours()).padStart(2,'0');
+  const m = String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('time').textContent = `${h}:${m}`;
+  const tage   = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+  const monate = ['Januar','Februar','März','April','Mai','Juni','Juli',
+                  'August','September','Oktober','November','Dezember'];
+  document.getElementById('date').textContent =
+    `${tage[n.getDay()]}, ${n.getDate()}. ${monate[n.getMonth()]}`;
+}
+updateClock();
+setInterval(updateClock, 15000);
+
+// ── Bilder laden ──────────────────────────────────────────────
+// Wird alle IMAGE_POLL_MS Sekunden aufgerufen.
+// Erkennt automatisch neue Bilder nach Google Drive Sync.
+async function loadImages() {
+  try {
+    // ?t= verhindert Browser-Cache → immer aktuelle Liste
+    const res  = await fetch('/bilder/?t=' + Date.now());
+    const html = await res.text();
+    const parser = new DOMParser();
+    const doc    = parser.parseFromString(html, 'text/html');
+
+    // Alle Bild-Links aus dem Verzeichnis-Listing holen
+    const links = [...doc.querySelectorAll('a[href]')]
+      .map(a => decodeURIComponent(a.getAttribute('href')))
+      .filter(h => /\.(jpg|jpeg|png|gif|webp)$/i.test(h));
+
+    if (links.length === 0) {
+      // Noch keine Bilder → Hinweis anzeigen
+      noImages.classList.add('show');
+      return;
+    }
+
+    noImages.classList.remove('show');
+
+    // Absolute Pfade bauen
+    const neuePfade = links.map(l =>
+      l.startsWith('/') ? l : `/bilder/${l}`
+    );
+
+    // Prüfen ob sich die Bildliste geändert hat
+    const geaendert = neuePfade.length !== images.length ||
+      neuePfade.some((p, i) => p !== images[i]);
+
+    if (geaendert) {
+      console.log(`Bildliste aktualisiert: ${neuePfade.length} Bilder gefunden`);
+      const alterIdx = currentIdx;
+      images = neuePfade;
+      // Aktuellen Index beibehalten (nicht von vorne anfangen)
+      currentIdx = Math.min(alterIdx, images.length - 1);
+      renderSlides();
+    }
+
+  } catch(e) {
+    console.warn('Bildliste konnte nicht geladen werden:', e);
+  }
+}
+
+function renderSlides() {
+  stage.innerHTML = '';
+  images.forEach((src, i) => {
+    const d = document.createElement('div');
+    d.className = 'slide' + (i === currentIdx ? ' active' : '');
+    d.style.backgroundImage = `url('${src}?t=${Date.now()}')`;
+    stage.appendChild(d);
+  });
+  updateCounter();
+}
+
+function updateCounter() {
+  if (images.length > 0) {
+    imgCtr.textContent = `${currentIdx + 1} / ${images.length}`;
+    const name = images[currentIdx].split('/').pop()
+      .replace(/\?.*$/, '').replace(/\.[^.]+$/, '');
+    imgName.textContent = decodeURIComponent(name);
+  }
+}
+
+// ── Slideshow ─────────────────────────────────────────────────
+function startSlideshow() {
+  if (slideTimer) return;
+  slideTimer = setInterval(nextSlide, SLIDE_MS);
+}
+
+function pauseSlideshow() {
+  clearInterval(slideTimer);
+  slideTimer = null;
+}
+
+function nextSlide() {
+  if (images.length === 0) return;
+  const slides = stage.querySelectorAll('.slide');
+  if (slides.length === 0) return;
+  slides[currentIdx].classList.remove('active');
+  currentIdx = (currentIdx + 1) % images.length;
+  slides[currentIdx].classList.add('active');
+  updateCounter();
+}
+
+// ── Schlaf / Aufwachen ────────────────────────────────────────
+function goToSleep() {
+  if (sleeping) return;
+  sleeping = true;
+  pauseSlideshow();
+  sleepEl.classList.add('active');
+  dot.className = 'inactive';
+  statusTxt.textContent = 'Ruhemodus';
+  cdWrap.classList.remove('show');
+  clearInterval(cdInterval);
+  cdNum.textContent = '–';
+}
+
+function wakeUp() {
+  if (!sleeping) return;
+  sleeping = false;
+  sleepEl.classList.remove('active');
+  startSlideshow();
+  cdWrap.classList.remove('show');
+  clearInterval(cdInterval);
+  cdInterval = null;
+}
+
+// ── Countdown ─────────────────────────────────────────────────
+function startCountdown() {
+  if (cdInterval) return;
+  cdWrap.classList.add('show');
+  let rem = TIMEOUT_SEC;
+  const circ = 110;
+  cdNum.textContent = rem;
+  cdRing.style.strokeDashoffset = 0;
+
+  cdInterval = setInterval(() => {
+    rem--;
+    cdNum.textContent = rem;
+    cdRing.style.strokeDashoffset = circ * (1 - rem / TIMEOUT_SEC);
+    if (rem <= 0) {
+      clearInterval(cdInterval);
+      cdInterval = null;
+      goToSleep();
+    }
+  }, 1000);
+}
+
+function resetCountdown() {
+  clearInterval(cdInterval);
+  cdInterval = null;
+  cdWrap.classList.remove('show');
+  cdNum.textContent = '–';
+  cdRing.style.strokeDashoffset = 0;
+}
+
+// ── Aufwärm-Animation ─────────────────────────────────────────
+function runWarmupAnimation() {
+  let pct = 0;
+  const step = 100 / WARMUP_SEC;
+  const bar = setInterval(() => {
+    pct = Math.min(pct + step, 100);
+    warmupBar.style.width = pct + '%';
+    const rest = Math.ceil(WARMUP_SEC - (pct / 100) * WARMUP_SEC);
+    warmupSub.textContent = rest > 0 ? `Bereit in ${rest}s …` : 'Bereit!';
+    if (pct >= 100) clearInterval(bar);
+  }, 1000);
+}
+runWarmupAnimation();
+
+// ── Status-Polling (liest status.txt vom Python-Script) ───────
+async function pollStatus() {
+  try {
+    const res    = await fetch('/status.txt?t=' + Date.now());
+    const status = (await res.text()).trim();
+    if (status === lastStatus) return;
+    lastStatus = status;
+
+    if (status === 'warming_up') {
+      warmingUp = true;
+      dot.className = 'warmup';
+      statusTxt.textContent = 'Aufwärmen…';
+
+    } else if (status === 'active') {
+      if (warmingUp) {
+        warmingUp = false;
+        warmupEl.classList.add('hidden');
+        loadImages();
+        startSlideshow();
+      }
+      dot.className = '';
+      statusTxt.textContent = 'Bewegung erkannt';
+      resetCountdown();
+      wakeUp();
+
+    } else if (status === 'no_motion') {
+      dot.className = 'inactive';
+      statusTxt.textContent = 'Keine Bewegung';
+      if (!sleeping) startCountdown();
+
+    } else if (status === 'sleeping') {
+      goToSleep();
+    }
+  } catch(e) {
+    // Server noch nicht bereit
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────
+// Bildliste alle 5 Sekunden prüfen → neue Bilder erscheinen automatisch
+setInterval(loadImages, IMAGE_POLL_MS);
+
+// Status alle 500ms prüfen
+setInterval(pollStatus, STATUS_POLL_MS);
+
+// Nach WARMUP_SEC automatisch starten (auch ohne Python-Server)
+setTimeout(() => {
+  if (warmingUp) {
+    warmingUp = false;
+    warmupEl.classList.add('hidden');
+    dot.className = '';
+    statusTxt.textContent = 'Bereit';
+    loadImages().then(() => startSlideshow());
+  }
+}, WARMUP_SEC * 1000);
+
+
+/* Control Panel - Menü öffnen/schließen */
+const menuBtn = document.getElementById("menuBtn");
+const panel = document.getElementById("controlPanel");
+const overlay = document.getElementById("controlPanelOverlay");
+
+menuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    
+    if (panel.style.display === "none" || panel.style.display === "") {
+        panel.style.display = "block";
+        overlay.classList.add("active");
+    } else {
+        panel.style.display = "none";
+        overlay.classList.remove("active");
+    }
+});
+
+// Schließe Panel wenn auf Overlay geklickt wird
+overlay.addEventListener("click", () => {
+    panel.style.display = "none";
+    overlay.classList.remove("active");
+});
+
+// Schließe Panel wenn ESC gedrückt wird
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+        panel.style.display = "none";
+        overlay.classList.remove("active");
+    }
+});
+</script>
+</body>
+</html>
