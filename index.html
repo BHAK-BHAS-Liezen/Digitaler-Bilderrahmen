@@ -181,9 +181,68 @@ html, body {
   font-family: 'Raleway', sans-serif; font-weight: 200; font-size: 13px;
   letter-spacing: 0.25em; text-transform: uppercase; color: rgba(200,169,110,0.4);
 }
+
+/* Button vom Controlpanel -- jetzt verbunden mit control. php und index = Hauptseite */
+
+#menuBtn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 9999;
+
+    width: 50px;
+    height: 50px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: white;
+    cursor: pointer;
+    font-size: 24px;
+}
+
+#controlPanel {
+    display: none;
+
+    position: fixed;
+    top: 70px;
+    left: 10px;
+
+    width: 400px;
+    height: 600px;
+
+    background: white;
+
+    border-radius: 12px;
+    overflow: hidden;
+
+    z-index: 9999;
+}
+
+#controlPanel iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
 </style>
 </head>
 <body>
+
+
+
+
+<button id="menuBtn"> Menü </button>
+<div id="controlPanel">
+  <iframe scr="http://localhost/control.php"
+  style="width:100%;hight:100%;border:5px solid red;background:white"></iframe>
+</div>
+
+
+
+
+
+
 
 <div id="warmup">
   <div id="warmup-title">Bilderrahmen</div>
@@ -488,6 +547,21 @@ setTimeout(() => {
     loadImages().then(() => startSlideshow());
   }
 }, WARMUP_SEC * 1000);
+
+
+/* Verbindung Button und control.php oder so */
+const menuBtn = document.getElementById("menuBtn");
+const panel = document.getElementById("controlPanel");
+
+menuBtn.addEventListener("click", () => {
+
+    if (panel.style.display === "none" || panel.style.display === "") {
+        panel.style.display = "block";
+    } else {
+        panel.style.display = "none";
+    }
+
+});
 </script>
 </body>
 </html>

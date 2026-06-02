@@ -157,7 +157,7 @@ def lade_control():
 
 def änderungen_loggen(neu: set, geloescht: set):
     if not neu and not geloescht:
-        return
+        return 
     zeitstempel = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
         with open(ÄNDERUNGEN_LOG, "a", encoding="utf-8") as f:

@@ -1,0 +1,9 @@
+{
+  "zeitstempel": "09:53:44",
+  "pir_aktiv": true,
+  "mikrofon_aktiv": true,
+  "monitor_an": true,
+  "system_bereit": true,
+  "mic_gpio": 17,
+  "timeout_sek": 30
+}
