@@ -1,6 +1,7 @@
 <?php
 /**
- * save.php — Speichert Einstellungen in data/control.json
+ * Save.php — Speichert Einstellungen in data/control.json
+ * Funktioniert sowohl mit AJAX als auch normalen Formular-Submits
  */
 
 $data = [
@@ -11,10 +12,22 @@ $data = [
 ];
 
 file_put_contents(
-    __DIR__ . "/../data/control.json",
+    __DIR__ . "/data/control.json",
     json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
 );
 
-header("Location: index.php");
+// Prüfe ob AJAX-Anfrage oder normales Formular
+$is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+           strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+if ($is_ajax) {
+    // AJAX: JSON-Response (kein Redirect)
+    header('Content-Type: application/json');
+    http_response_code(200);
+    echo json_encode(["success" => true, "message" => "Gespeichert"]);
+} else {
+    // Normales Formular: Umleiten
+    header("Location: index.php");
+}
 exit;
 ?>

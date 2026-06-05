@@ -1,8 +1,8 @@
 {
-  "zeitstempel": "18:42:35",
+  "zeitstempel": "22:06:14",
   "pir_aktiv": true,
   "mikrofon_aktiv": false,
-  "monitor_an": false,
+  "monitor_an": true,
   "system_bereit": true,
   "mic_gpio": 17,
   "timeout_sek": 30

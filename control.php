@@ -694,7 +694,7 @@ document.getElementById('btn-monitor-an').addEventListener('click', async () => 
   const form = new FormData();
   form.append('monitor', 'on');
   try {
-    await fetch('save.php', { method: 'POST', body: form });
+    await fetch('Save.php', { method: 'POST', body: form });
     console.log('Monitor AN – gespeichert');
   } catch(e) {
     console.error('Fehler:', e);
@@ -705,7 +705,7 @@ document.getElementById('btn-monitor-aus').addEventListener('click', async () =>
   const form = new FormData();
   form.append('monitor', 'off');
   try {
-    await fetch('save.php', { method: 'POST', body: form });
+    await fetch('Save.php', { method: 'POST', body: form });
     console.log('Monitor AUS – gespeichert');
   } catch(e) {
     console.error('Fehler:', e);
