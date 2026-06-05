@@ -9,7 +9,7 @@
 
 <h1>Bilderrahmen Steuerung</h1>
 
-<form action="save.php" method="POST">
+<form action="Save.php" method="POST">
 
     <h2>Monitor</h2>
 
