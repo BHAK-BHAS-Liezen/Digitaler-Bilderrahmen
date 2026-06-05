@@ -7,7 +7,7 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
-$status_datei = __DIR__ . '/../data/sensor_status.json';
+$status_datei = __DIR__ . '/data/sensor_status.json';
 
 if (file_exists($status_datei)) {
     $inhalt = file_get_contents($status_datei);

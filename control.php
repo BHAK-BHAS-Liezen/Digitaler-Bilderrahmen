@@ -595,7 +595,7 @@ let letzterSchwellwert = 500;
 
 async function statusAktualisieren() {
   try {
-    const res  = await fetch('status_api.php?t=' + Date.now());
+    const res  = await fetch('Status_api.php?t=' + Date.now());
     const data = await res.json();
 
     // System-Bereit Banner
