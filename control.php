@@ -476,7 +476,7 @@ hr {
   <div class="abschnitt">
     <div class="abschnitt-label">Steuerung</div>
 
-    <form class="formular" action="save.php" method="POST" id="steuer-form">
+    <form class="formular" action="Save.php" method="POST" id="steuer-form">
 
       <!-- Monitor AN/AUS (sofort, ohne Speichern) -->
       <div class="feld-gruppe">
