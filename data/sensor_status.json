@@ -1,7 +1,7 @@
 {
-  "zeitstempel": "10:47:49",
+  "zeitstempel": "18:33:07",
   "pir_aktiv": true,
-  "mikrofon_aktiv": true,
+  "mikrofon_aktiv": false,
   "monitor_an": false,
   "system_bereit": true,
   "mic_gpio": 17,

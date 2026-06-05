@@ -482,10 +482,10 @@ hr {
       <div class="feld-gruppe">
         <div class="feld-label">Monitor</div>
         <div class="monitor-buttons">
-          <button type="submit" name="monitor" value="on"  class="btn btn-an">
+          <button type="button" id="btn-monitor-an"  class="btn btn-an">
             ▶ &nbsp; AN
           </button>
-          <button type="submit" name="monitor" value="off" class="btn btn-aus">
+          <button type="button" id="btn-monitor-aus" class="btn btn-aus">
             ◼ &nbsp; AUS
           </button>
         </div>
@@ -688,6 +688,29 @@ async function statusAktualisieren() {
       'Verbindungsfehler — Python-Server läuft?';
   }
 }
+
+// ── Monitor-Buttons: AN/AUS per AJAX ───────────────────────────
+document.getElementById('btn-monitor-an').addEventListener('click', async () => {
+  const form = new FormData();
+  form.append('monitor', 'on');
+  try {
+    await fetch('save.php', { method: 'POST', body: form });
+    console.log('Monitor AN – gespeichert');
+  } catch(e) {
+    console.error('Fehler:', e);
+  }
+});
+
+document.getElementById('btn-monitor-aus').addEventListener('click', async () => {
+  const form = new FormData();
+  form.append('monitor', 'off');
+  try {
+    await fetch('save.php', { method: 'POST', body: form });
+    console.log('Monitor AUS – gespeichert');
+  } catch(e) {
+    console.error('Fehler:', e);
+  }
+});
 
 statusAktualisieren();
 setInterval(statusAktualisieren, 2000);
