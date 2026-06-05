@@ -136,8 +136,12 @@ def aktivitaet_melden(quelle: str):
 
 
 def lade_control():
-    """Liest control.json und übernimmt Einstellungen."""
-    global TIMEOUT_SEC
+    """Liest control.json und übernimmt Einstellungen.
+
+    Wenn Benutzer manuell "off" gespeichert hat, wird der Monitor
+    ausgeschaltet und KEINE automatischen Sensoren ihn wieder anschalten.
+    """
+    global TIMEOUT_SEC, screen_on
 
     try:
         with open(CONTROL_FILE, "r") as f:
@@ -146,10 +150,21 @@ def lade_control():
         TIMEOUT_SEC = data.get("timeout", 30)
 
         monitor_status = data.get("monitor", "on")
+        # Wenn Benutzer manuell "off" gespeichert hat → nicht automatisch wieder an!
         if monitor_status == "off":
-            monitor_aus()
+            with state_lock:
+                war_an = screen_on
+            if war_an:  # Nur wenn vorher AN war
+                log.info("Benutzer hat Monitor manuell AUS geschaltet")
+                monitor_aus()
+            return  # ← Wichtig: Hier rausgehen, verhindert automatische Aktivierung
+
         elif monitor_status == "on":
-            monitor_an()
+            with state_lock:
+                war_aus = not screen_on
+            if war_aus:  # Nur wenn vorher AUS war
+                log.info("Benutzer hat Monitor manuell AN geschaltet")
+                monitor_an()
 
     except Exception as e:
         log.warning(f"Control Fehler: {e}")
