@@ -1,5 +1,6 @@
 {
-  "monitor": "on",
-  "timeout": 30,
-  "slideshow_speed": 7
+    "monitor": "on",
+    "timeout": 30,
+    "slideshow_speed": 7,
+    "mic_schwellwert": 500
 }

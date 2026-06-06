@@ -27,7 +27,7 @@ if ($is_ajax) {
     echo json_encode(["success" => true, "message" => "Gespeichert"]);
 } else {
     // Normales Formular: Umleiten
-    header("Location: index.php");
+    header("Location: index.html");
 }
 exit;
 ?>
