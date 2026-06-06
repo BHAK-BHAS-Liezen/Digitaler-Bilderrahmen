@@ -482,10 +482,10 @@ hr {
       <div class="feld-gruppe">
         <div class="feld-label">Monitor</div>
         <div class="monitor-buttons">
-          <button type="button" id="btn-monitor-an"  class="btn btn-an">
+          <button type="button" id="btn-monitor-an"  class="btn btn-an" value="on">
             ▶ &nbsp; AN
           </button>
-          <button type="button" id="btn-monitor-aus" class="btn btn-aus">
+          <button type="button" id="btn-monitor-aus" class="btn btn-aus" value="off">
             ◼ &nbsp; AUS
           </button>
         </div>
@@ -581,7 +581,7 @@ document.getElementById('btn-speichern').addEventListener('click', async () => {
   const daten  = new FormData(form);
 
   try {
-    await fetch('save.php', { method: 'POST', body: daten });
+    await fetch('Save.php', { method: 'POST', body: daten });
     const meld = document.getElementById('meldung');
     meld.classList.add('sichtbar');
     setTimeout(() => meld.classList.remove('sichtbar'), 2500);
@@ -595,7 +595,7 @@ let letzterSchwellwert = 500;
 
 async function statusAktualisieren() {
   try {
-    const res  = await fetch('Status_api.php?t=' + Date.now());
+    const res  = await fetch('Status.php?t=' + Date.now());
     const data = await res.json();
 
     // System-Bereit Banner
