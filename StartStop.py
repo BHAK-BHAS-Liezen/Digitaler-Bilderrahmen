@@ -1,6 +1,17 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
 ║           Digitaler Bilderrahmen — Hauptprogramm             ║
+║                                                              ║
+║  Funktionen:                                                 ║
+║  • PIR Motion Sensor erkennt Bewegung (GPIO 4)               ║
+║  • KY-038 Mikrofon erkennt Geräusche (GPIO 17, DO-Pin)       ║
+║  • ODER-Logik: Bewegung ODER Geräusch → Monitor an           ║
+║  • Aufwärmzeit beim Start (Sensor kalibriert sich)           ║
+║  • Monitor geht nach X Sekunden ohne Aktivität aus           ║
+║  • Slideshow pausiert im Schlafmodus                         ║
+║  • Alle Logik läuft in Hintergrund-Threads                   ║
+║  • Google Drive-Sync via rclone                              ║
+║  • Chromium-Fenster zeigt die Slideshow (Vollbild möglich)   ║
 ╚══════════════════════════════════════════════════════════════╝
 """
 
